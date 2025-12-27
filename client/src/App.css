@@ -1,0 +1,26 @@
+/* 应用容器样式 */
+.app {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  padding: var(--space-4);
+  position: relative;
+  z-index: 0;
+}
+
+/* 响应式调整 */
+@media (max-width: 640px) {
+  .app {
+    padding: 0;
+    align-items: stretch;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app {
+    padding: var(--space-8);
+  }
+}

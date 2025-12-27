@@ -1,0 +1,35 @@
+{
+  "name": "chat-client",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "bun run build:tsc && vite build",
+    "build:tsc": "tsc",
+    "build:test": "bun run build:tsc && vite build --mode test",
+    "build:staging": "bun run build:tsc && vite build --mode staging",
+    "build:prod": "bun run build:tsc && vite build --mode production",
+    "preview": "vite preview",
+    "setup:env": "bun scripts/setup-env.js",
+    "setup:dev": "bun scripts/setup-env.js development",
+    "setup:test": "bun scripts/setup-env.js test",
+    "setup:staging": "bun scripts/setup-env.js staging",
+    "setup:prod": "bun scripts/setup-env.js production"
+  },
+  "dependencies": {
+    "axios": "^1.5.0",
+    "ogl": "^1.0.11",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "styled-components": "^6.1.19"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@types/styled-components": "^5.1.36",
+    "@vitejs/plugin-react": "^4.0.3",
+    "typescript": "^5.0.2",
+    "vite": "^4.4.5"
+  }
+}

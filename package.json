@@ -1,0 +1,44 @@
+{
+  "name": "web-chat-system",
+  "version": "1.0.0",
+  "description": "轻量级网页聊天系统 - 支持公共大厅和私密房间的实时聊天应用",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"bun run server:dev\" \"bun run client:dev\"",
+    "server:dev": "cd server && bun run dev",
+    "client:dev": "cd client && bun run dev",
+    "build": "cd client && bun run build",
+    "start": "cd server && bun start",
+    "server:start": "cd server && bun start",
+    "client:build": "cd client && bun run build",
+    "install:all": "bun install && cd server && bun install && cd ../client && bun install"
+  },
+  "keywords": [
+    "chat", 
+    "web", 
+    "realtime", 
+    "react", 
+    "nodejs", 
+    "typescript", 
+    "sqlite",
+    "websocket",
+    "messaging"
+  ],
+  "author": "Web Chat System Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "bun": ">=1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/web-chat-system.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/web-chat-system/issues"
+  },
+  "homepage": "https://github.com/your-username/web-chat-system#readme"
+}
