@@ -10,7 +10,6 @@ const NicknameForm: React.FC<NicknameFormProps> = ({ onNicknameSet }) => {
   const [nickname, setNickname] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedAvatar, setSelectedAvatar] = useState('default');
 
   const validateNickname = (name: string): string | null => {
     const trimmed = name.trim();
@@ -36,8 +35,6 @@ const NicknameForm: React.FC<NicknameFormProps> = ({ onNicknameSet }) => {
     await new Promise(resolve => setTimeout(resolve, 300));
     
     const finalNickname = nickname.trim();
-    // 保存头像选择
-    localStorage.setItem('chat_avatar', selectedAvatar);
     onNicknameSet(finalNickname);
   };
 
@@ -46,13 +43,6 @@ const NicknameForm: React.FC<NicknameFormProps> = ({ onNicknameSet }) => {
       handleSubmit(e);
     }
   };
-
-  const avatarOptions = [
-    { id: 'default', emoji: '👤', title: '默认头像' },
-    { id: 'colorful', emoji: '🎨', title: '彩色头像' },
-    { id: 'animal', emoji: '🐱', title: '动物头像' },
-    { id: 'nature', emoji: '🌟', title: '自然头像' },
-  ];
 
   return (
     <div className={styles.container}>
@@ -74,32 +64,6 @@ const NicknameForm: React.FC<NicknameFormProps> = ({ onNicknameSet }) => {
             fullWidth
             error={error}
           />
-
-          <div className={styles.avatarSection}>
-            <div className={styles.sectionDivider}>
-              <div className={styles.line} />
-              <span className={styles.sectionTitle}>选择头像风格</span>
-              <div className={styles.line} />
-            </div>
-            
-            <div className={styles.avatarOptions}>
-              {avatarOptions.map((avatar) => (
-                <button
-                  key={avatar.id}
-                  type="button"
-                  className={`${styles.avatarOption} ${
-                    selectedAvatar === avatar.id ? styles.active : ''
-                  }`}
-                  onClick={() => setSelectedAvatar(avatar.id)}
-                  title={avatar.title}
-                >
-                  <div className={styles.avatarPreview}>
-                    {avatar.emoji}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
 
           <Button
             type="submit"

@@ -1,14 +1,14 @@
-# Dependencies
+# ==================== 依赖包 ====================
 node_modules/
 */node_modules/
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
 
-# Bun
-bun.lockb
+# Bun依赖锁文件应该提交到版本控制以确保依赖一致性
+# bun.lockb 已从忽略列表中移除
 
-# Build outputs
+# ==================== 构建产物 ====================
 dist/
 build/
 */dist/
@@ -16,7 +16,7 @@ build/
 client/dist/
 server/dist/
 
-# Database files
+# ==================== 数据库文件 ====================
 *.db
 *.sqlite
 *.sqlite3
@@ -24,13 +24,13 @@ server/database/*.db
 server/database/*.sqlite
 server/database/*.sqlite3
 
-# File uploads
+# ==================== 文件上传 ====================
 uploads/
 server/uploads/
 client/uploads/
 *.tmp
 
-# Logs
+# ==================== 日志文件 ====================
 logs/
 *.log
 npm-debug.log*
@@ -40,24 +40,16 @@ lerna-debug.log*
 server/logs/
 client/logs/
 
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage directory used by tools like istanbul
+# ==================== 测试和覆盖率 ====================
 coverage/
 *.lcov
 .nyc_output
-
-# Testing
 .jest/
 test-results/
 playwright-report/
 test-results.xml
 
-# IDE and Editor files
+# ==================== IDE和编辑器 ====================
 .vscode/
 .idea/
 *.swp
@@ -71,7 +63,7 @@ test-results.xml
 *.sublime-workspace
 *.sublime-project
 
-# OS generated files
+# ==================== 系统生成文件 ====================
 .DS_Store
 .DS_Store?
 ._*
@@ -81,7 +73,14 @@ ehthumbs.db
 Thumbs.db
 Desktop.ini
 
-# Temporary folders and files
+# ==================== 环境变量 ====================
+.env
+.env.local
+.env.*.local
+.env.test
+# 保留 .env.example 用于模板
+
+# ==================== 临时文件 ====================
 tmp/
 temp/
 .tmp/
@@ -89,92 +88,76 @@ temp/
 *.tmp
 *.temp
 
-# Cache directories
+# ==================== 缓存目录 ====================
 .cache/
 .parcel-cache/
 .next/
 .nuxt/
-.vuepress/dist
-
-# Optional npm cache directory
-.npm
-
-# Optional eslint cache
-.eslintcache
-
-# Optional stylelint cache
-.stylelintcache
-
-# Microbundle cache
+.vuepress/dist/
 .rpt2_cache/
 .rts2_cache_cjs/
 .rts2_cache_es/
 .rts2_cache_umd/
+.npm
 
-# Optional REPL history
-.node_repl_history
+# ==================== 运行时数据 ====================
+pids
+*.pid
+*.seed
+*.pid.lock
 
-# Output of 'npm pack'
-*.tgz
+# ==================== 可选的缓存文件 ====================
+.eslintcache
+.stylelintcache
+.prettiercache
+.tsbuildinfo
 
-# Yarn Integrity file
-.yarn-integrity
-
-# dotenv environment variables file
-.env.test
-
-# Stores VSCode versions used for testing VSCode extensions
-.vscode-test
-
-# Backup files
+# ==================== 备份文件 ====================
 *.bak
 *.backup
 backup/
 backups/
 
-# PM2 files
+# ==================== PM2文件 ====================
 .pm2/
 ecosystem.config.js
 
-# Docker
+# ==================== Docker ====================
 .dockerignore
 Dockerfile.dev
 docker-compose.override.yml
 
-# Deployment
+# ==================== 部署目录 ====================
 deploy/
 deployment/
 
-# Security
+# ==================== 安全文件 ====================
 *.pem
 *.key
 *.crt
 *.p12
 *.pfx
 
-# Local configuration
+# ==================== 本地配置 ====================
 config/local.json
 config/development.json
 config/production.json
 
-# Generated documentation
+# ==================== 生成的文档 ====================
 docs/generated/
 api-docs/
 
-# Storybook build outputs
+# ==================== Storybook构建输出 ====================
 storybook-static
 
-# TypeScript
-*.tsbuildinfo
+# ==================== 可选的REPL历史 ====================
+.node_repl_history
 
-# Optional npm cache directory
-.npm
+# ==================== npm打包输出 ====================
+*.tgz
 
-# ESLint cache
-.eslintcache
+# ==================== Yarn完整性文件 ====================
+.yarn-integrity
 
-# Prettier cache
-.prettiercache
-
-# Stylelint cache
-.stylelintcache
+# ==================== VSCode测试版本 ====================
+.vscode-test

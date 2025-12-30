@@ -4,8 +4,10 @@
 
 ### 环境要求
 - **Node.js**: 18.0.0 或更高版本
-- **npm**: 8.0.0 或更高版本
+- **Bun**: 1.0+ (推荐)
 - **操作系统**: Windows/Linux/macOS
+
+> **注意**: 本项目使用 Bun 作为包管理器，也支持 npm/yarn
 
 ### 一键部署脚本
 
@@ -16,10 +18,10 @@ git clone https://github.com/your-username/web-chat-system.git
 cd web-chat-system
 
 # 安装所有依赖
-npm run install:all
+bun run install:all
 
 # 启动开发环境
-npm run dev
+bun run dev
 ```
 
 #### Linux/macOS (Bash)
@@ -29,10 +31,10 @@ git clone https://github.com/your-username/web-chat-system.git
 cd web-chat-system
 
 # 安装所有依赖
-npm run install:all
+bun run install:all
 
 # 启动开发环境
-npm run dev
+bun run dev
 ```
 
 ## 📦 详细部署步骤
@@ -45,16 +47,20 @@ cd web-chat-system
 
 ### 2. 安装依赖
 ```bash
+# 一键安装所有依赖（推荐）
+bun run install:all
+
+# 或分别安装
 # 根目录依赖
-npm install
+bun install
 
 # 后端依赖
 cd server
-npm install
+bun install
 
 # 前端依赖
 cd ../client
-npm install
+bun install
 
 # 返回根目录
 cd ..
@@ -100,20 +106,20 @@ export default defineConfig({
 #### 开发环境
 ```bash
 # 同时启动前后端 (推荐)
-npm run dev
+bun run dev
 
 # 或分别启动
-npm run server:dev  # 后端 (端口 3001)
-npm run client:dev  # 前端 (端口 5173)
+bun run server:dev  # 后端 (端口 3001)
+bun run client:dev  # 前端 (端口 5173)
 ```
 
 #### 生产环境
 ```bash
 # 构建前端
-npm run build
+bun run build
 
 # 启动后端
-npm run start
+bun start
 ```
 
 ## 🌐 生产环境部署
@@ -122,11 +128,11 @@ npm run start
 ```bash
 # 构建前端静态文件
 cd client
-npm run build
+bun run build
 
 # 构建后端 (如果使用 TypeScript)
 cd ../server
-npm run build
+bun run build
 ```
 
 ### 2. 服务器配置
@@ -155,16 +161,16 @@ WORKDIR /app
 COPY . .
 
 # 安装依赖
-RUN npm run install:all
+RUN bun install
 
 # 构建前端
-RUN npm run build
+RUN bun run build
 
 # 暴露端口
 EXPOSE 3001
 
 # 启动命令
-CMD ["npm", "start"]
+CMD ["bun", "start"]
 ```
 
 ```bash
@@ -187,21 +193,24 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
-    # API 代理
-    location /api {
+    # API 代理 (包含SSE支持)
+    location /api/ {
         proxy_pass http://localhost:3001;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
+
+        # SSE关键配置 - 禁用缓冲
+        proxy_buffering off;
+        proxy_set_header Connection '';
+        proxy_set_header Cache-Control no-cache;
+        proxy_set_header X-Accel-Buffering no;
     }
 
     # 文件上传
-    location /uploads {
+    location /uploads/ {
         proxy_pass http://localhost:3001;
         client_max_body_size 10M;
     }
@@ -222,9 +231,9 @@ server {
 ### 前端配置
 | 配置项 | 默认值 | 说明 |
 |--------|--------|------|
-| API_BASE_URL | /api | API基础路径 |
-| POLL_INTERVAL | 1000 | 轮询间隔(毫秒) |
-| MAX_MESSAGE_LENGTH | 500 | 最大消息长度 |
+| VITE_API_BASE_URL | /api | API基础路径 |
+| VITE_API_TIMEOUT | 10000 | 请求超时时间(毫秒) |
+| VITE_NODE_ENV | development | 运行环境 |
 
 ## 🛠️ 故障排除
 
@@ -258,22 +267,43 @@ chmod 755 server/uploads
 #### 4. 依赖安装失败
 ```bash
 # 清理缓存重新安装
-npm cache clean --force
-rm -rf node_modules package-lock.json
-npm install
+bun clean
+rm -rf node_modules bun.lockb
+bun install
 ```
+
+#### 5. SSE连接失败
+**症状**: 消息无法实时推送，连接状态显示错误
+
+**解决方案**:
+- 检查Nginx配置是否包含SSE禁用缓冲设置
+- 验证防火墙是否阻止SSE连接
+- 检查浏览器控制台是否有CORS错误
+- 测试SSE端点: `curl -N "http://localhost:3001/api/sse/0?userId=test"`
+
+#### 6. 消息延迟或丢失
+**症状**: 消息发送后接收延迟或完全未收到
+
+**解决方案**:
+- 检查SSEManager连接状态
+- 验证数据库插入是否成功
+- 查看后端日志中的SSE广播记录
+- 确认客户端是否正确订阅房间
 
 ### 日志查看
 ```bash
 # 后端日志
 cd server
-npm run dev  # 开发环境日志
+bun run dev  # 开发环境日志
 
 # PM2 日志
 pm2 logs chat-server
 
 # Docker 日志
 docker logs <container-id>
+
+# 实时监控SSE连接
+curl http://localhost:3001/api/sse/stats
 ```
 
 ## 📊 性能优化
@@ -281,17 +311,24 @@ docker logs <container-id>
 ### 1. 数据库优化
 - 定期清理旧消息
 - 添加适当索引
-- 使用连接池
+- 使用事务处理
 
-### 2. 文件存储优化
+### 2. SSE优化
+- 及时清理断开的连接
+- 限制每个房间的连接数
+- 批量推送消息减少开销
+- 监控SSE连接统计
+
+### 3. 文件存储优化
 - 使用CDN存储文件
 - 图片压缩和格式转换
 - 定期清理无用文件
 
-### 3. 前端优化
+### 4. 前端优化
 - 启用Gzip压缩
 - 使用CDN加速
 - 代码分割和懒加载
+- 优化React组件渲染
 
 ## 🔒 安全配置
 
@@ -357,14 +394,16 @@ tar -czf backup/uploads_$(date +%Y%m%d).tar.gz server/uploads/
 - [ ] 数据库连接正常
 - [ ] API接口响应正常
 - [ ] 前端页面加载正常
+- [ ] SSE连接正常（查看连接状态指示器）
 - [ ] 文件上传功能正常
-- [ ] 消息收发功能正常
+- [ ] 消息收发功能正常（实时推送）
+- [ ] 房间切换功能正常
 
 ### 生产环境检查
 - [ ] HTTPS配置
-- [ ] 反向代理配置
-- [ ] 防火墙配置
-- [ ] 监控系统配置
+- [ ] 反向代理配置（包含SSE支持）
+- [ ] 防火墙配置（允许SSE连接）
+- [ ] 监控系统配置（包括SSE连接监控）
 - [ ] 备份策略配置
 - [ ] 日志管理配置
 

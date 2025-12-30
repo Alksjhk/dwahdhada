@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import db from '../utils/database';
+import { SSEManager } from '../utils/SSEManager';
+import { Message } from '../types';
 
 export class MessageController {
     // 发送消息
@@ -49,10 +51,23 @@ export class MessageController {
 
             // 插入消息
             const result = await db.run(
-                `INSERT INTO messages (room_id, user_id, content, message_type, file_name, file_size, file_url) 
+                `INSERT INTO messages (room_id, user_id, content, message_type, file_name, file_size, file_url)
                  VALUES (?, ?, ?, ?, ?, ?, ?)`,
                 [roomId, userId, content.trim(), messageType, fileName || null, fileSize || null, fileUrl || null]
             );
+
+            // 获取完整的消息信息
+            const newMessage: Message = await db.get(
+                `SELECT id, user_id as userId, content, message_type as messageType,
+                        file_name as fileName, file_size as fileSize, file_url as fileUrl,
+                        datetime(created_at, 'utc') as createdAt
+                 FROM messages WHERE id = ?`,
+                [result.lastID]
+            );
+
+            // 通过SSE广播新消息
+            const sseManager = SSEManager.getInstance();
+            sseManager.broadcastNewMessage(roomId, newMessage);
 
             res.json({
                 success: true,

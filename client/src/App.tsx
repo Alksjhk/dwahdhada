@@ -8,7 +8,7 @@ import Aurora from './component/Aurora';
 import './App.css';
 
 const AppContent: React.FC = () => {
-    const { state, setUser, setConnected } = useChat();
+    const { state, dispatch } = useChat();
     const [showNicknameForm, setShowNicknameForm] = useState(false);
 
     useEffect(() => {
@@ -16,29 +16,29 @@ const AppContent: React.FC = () => {
         const savedNickname = localStorage.getItem('chat_nickname');
         
         if (savedUserId && savedNickname) {
-            setUser(savedUserId);
-            setConnected(true);
+            dispatch({ type: 'SET_USER', payload: savedUserId });
+            dispatch({ type: 'SET_CONNECTED', payload: true });
         } else if (savedUserId && !savedNickname) {
             // 有用户ID但没有昵称，显示昵称设置界面
             setShowNicknameForm(true);
         }
-    }, [setUser, setConnected]);
+    }, []); // 移除依赖项，只在组件挂载时执行一次
 
     const handleLogin = (userId: string) => {
-        setUser(userId);
+        dispatch({ type: 'SET_USER', payload: userId });
         // 登录后检查是否有昵称
         const savedNickname = localStorage.getItem('chat_nickname');
         if (!savedNickname) {
             setShowNicknameForm(true);
         } else {
-            setConnected(true);
+            dispatch({ type: 'SET_CONNECTED', payload: true });
         }
     };
 
     const handleNicknameSet = (nickname: string) => {
         localStorage.setItem('chat_nickname', nickname);
         setShowNicknameForm(false);
-        setConnected(true);
+        dispatch({ type: 'SET_CONNECTED', payload: true });
     };
 
     // 显示昵称设置界面

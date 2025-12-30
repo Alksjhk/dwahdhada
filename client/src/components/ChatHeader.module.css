@@ -32,6 +32,56 @@
   gap: var(--space-3);
 }
 
+.connectionStatus {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.statusDot.connected {
+  background-color: var(--success, #52c41a);
+  box-shadow: 0 0 0 2px rgba(82, 196, 26, 0.2);
+}
+
+.statusDot.connecting {
+  background-color: var(--warning, #faad14);
+  box-shadow: 0 0 0 2px rgba(250, 173, 20, 0.2);
+  animation: pulse 1.5s infinite;
+}
+
+.statusDot.disconnected {
+  background-color: var(--error, #f5222d);
+  box-shadow: 0 0 0 2px rgba(245, 34, 45, 0.2);
+}
+
+.statusText {
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
 .userInfo {
   display: flex;
   align-items: center;
@@ -71,5 +121,9 @@
 
   .userInfo {
     padding: var(--space-1);
+  }
+
+  .connectionStatus {
+    display: none; /* 移动端隐藏连接状态 */
   }
 }

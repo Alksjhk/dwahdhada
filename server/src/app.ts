@@ -5,6 +5,7 @@ import path from 'path';
 import roomRoutes from './routes/roomRoutes';
 import messageRoutes from './routes/messageRoutes';
 import fileRoutes from './routes/fileRoutes';
+import sseRoutes from './routes/sseRoutes';
 import { initializeDatabase } from './database/init';
 import { migrateDatabase } from './database/migrate';
 
@@ -16,7 +17,7 @@ const PORT = process.env.PORT || 3001;
 
 // 中间件
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:3000'], // Vite和CRA默认端口
+    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'], // Vite和CRA默认端口
     credentials: true
 }));
 app.use(express.json());
@@ -35,6 +36,7 @@ app.use((req, res, next) => {
 app.use('/api/rooms', roomRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/files', fileRoutes);
+app.use('/api/sse', sseRoutes);
 
 // 健康检查
 app.get('/health', (req, res) => {

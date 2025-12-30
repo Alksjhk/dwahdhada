@@ -1,13 +1,13 @@
 # 轻量级网页聊天系统
 
-基于 React + Node.js 的轻量级实时聊天系统，支持公共大厅和私密房间功能。
+基于 React + Node.js + SQLite 的轻量级实时聊天系统，支持公共大厅和私密房间功能，使用 Server-Sent Events (SSE) 实现实时消息推送。
 
 ## 功能特性
 
 - **无需注册登录** - 输入自定义ID即可开始聊天
 - **公共大厅** - 默认进入的公共聊天室
 - **私密房间** - 6位数字房间号，支持创建和加入
-- **实时消息** - HTTP轮询消息推送（1秒间隔）
+- **实时消息** - Server-Sent Events (SSE) 实时消息推送
 - **文件上传** - 支持图片、文档等（最大10MB）
 - **响应式设计** - 支持桌面端和移动端
 - **消息持久化** - SQLite数据库存储
@@ -16,9 +16,17 @@
 
 | 层级 | 技术 |
 |------|------|
-| 前端 | React 18 + TypeScript + Vite + CSS Modules |
-| 后端 | Node.js + Express + SQLite3 + TypeScript |
+| 前端 | React 18 + TypeScript + Vite + Axios + CSS Modules + SSE |
+| 后端 | Node.js + Express + SQLite3 + TypeScript + Multer + SSE |
 | 包管理 | Bun 1.0+ |
+| 状态管理 | React Context + useReducer |
+
+**核心特性：**
+- ✅ Server-Sent Events (SSE) 实时消息推送
+- ✅ React Context + useReducer 状态管理
+- ✅ 文件上传支持 (multer, 最大10MB)
+- ✅ TypeScript 全栈类型安全
+- ✅ CSS Modules 组件化样式
 
 ## 快速开始
 
@@ -46,63 +54,116 @@ bun run dev
 
 ```
 web-chat-system/
-├── client/                     # 前端项目
+├── client/                     # 前端项目 (React + TypeScript + Vite)
 │   ├── src/
 │   │   ├── components/         # React组件
-│   │   │   ├── ChatContainer.tsx
-│   │   │   ├── MessageList.tsx
-│   │   │   ├── MessageInput.tsx
-│   │   │   ├── RoomSelector.tsx
-│   │   │   └── LoginForm.tsx
-│   │   ├── context/            # 状态管理
+│   │   │   ├── ChatContainer.tsx    # 聊天主容器
+│   │   │   ├── ChatHeader.tsx       # 头部组件
+│   │   │   ├── MessageList.tsx      # 消息列表
+│   │   │   ├── MessageInput.tsx     # 消息输入
+│   │   │   ├── RoomSelector.tsx     # 房间选择器
+│   │   │   ├── LoginForm.tsx        # 登录表单
+│   │   │   ├── NicknameForm.tsx     # 昵称设置
+│   │   │   ├── ConnectionStatus.tsx # 连接状态
+│   │   │   └── ui/                  # UI组件库
+│   │   ├── context/            # React Context状态管理
+│   │   │   └── ChatContext.tsx
 │   │   ├── hooks/              # 自定义Hooks
+│   │   │   └── useResponsive.ts
 │   │   ├── utils/              # 工具函数
-│   │   ├── App.tsx
-│   │   └── types.ts
-│   ├── .env
+│   │   │   ├── SSEManager.ts   # SSE客户端管理器
+│   │   │   ├── api.ts          # Axios API客户端
+│   │   │   └── MessagePoller.ts # 轮询机制(备用)
+│   │   ├── config/             # 配置文件
+│   │   │   └── api.ts
+│   │   ├── component/          # 特效组件
+│   │   │   └── Aurora.tsx      # 极光背景特效
+│   │   ├── types.ts            # TypeScript类型定义
+│   │   ├── App.tsx             # 应用入口
+│   │   └── main.tsx            # Vite入口
+│   ├── .env                   # 环境变量
 │   ├── package.json
-│   └── vite.config.ts
-├── server/                     # 后端项目
+│   ├── vite.config.ts
+│   └── tsconfig.json
+├── server/                     # 后端项目 (Express + TypeScript)
 │   ├── src/
 │   │   ├── controllers/        # 控制器
-│   │   │   ├── messageController.ts
-│   │   │   ├── roomController.ts
-│   │   │   └── fileController.ts
-│   │   ├── routes/             # 路由
-│   │   ├── database/           # 数据库初始化/迁移
-│   │   ├── utils/
-│   │   └── app.ts
+│   │   │   ├── messageController.ts  # 消息处理
+│   │   │   ├── roomController.ts     # 房间管理
+│   │   │   ├── fileController.ts     # 文件上传
+│   │   │   └── sseController.ts      # SSE连接管理
+│   │   ├── routes/             # 路由定义
+│   │   │   ├── messageRoutes.ts
+│   │   │   ├── roomRoutes.ts
+│   │   │   ├── fileRoutes.ts
+│   │   │   └── sseRoutes.ts
+│   │   ├── database/           # 数据库
+│   │   │   ├── init.ts         # 数据库初始化
+│   │   │   └── migrate.ts      # 数据库迁移
+│   │   ├── utils/              # 工具类
+│   │   │   ├── database.ts     # 数据库连接
+│   │   │   └── SSEManager.ts   # SSE服务端管理器
+│   │   ├── types.ts            # TypeScript类型定义
+│   │   └── app.ts              # Express应用入口
 │   ├── database/               # SQLite数据库文件
+│   │   └── chat.db
 │   ├── uploads/                # 文件上传目录
-│   ├── .env
-│   └── package.json
-├── package.json
-└── README.md
+│   ├── .env                    # 环境变量
+│   ├── package.json
+│   └── tsconfig.json
+├── package.json                # 根目录包配置
+├── README.md
+├── Technical.md                # 技术文档
+├── Structure.md                # 结构说明
+├── Deployment.md               # 部署指南
+└── API_CONFIG_GUIDE.md         # API配置指南
 ```
 
 ## 系统架构
 
 ```
 ┌─────────────────────────────────────────┐
-│           前端 (React)                   │
-│  ┌─────────┐  ┌─────────┐  ┌─────────┐ │
-│  │登录表单 │  │聊天界面 │  │轮询组件 │ │
-│  └─────────┘  └─────────┘  └─────────┘ │
+│           前端 (React 18)                │
+│  ┌───────────────────────────────────┐  │
+│  │  App (ChatContext.Provider)       │  │
+│  │  ┌─────────────────────────────┐  │  │
+│  │  │  ChatContainer              │  │  │
+│  │  │  ├─ ChatHeader              │  │  │
+│  │  │  ├─ RoomSelector            │  │  │
+│  │  │  ├─ MessageList             │  │  │
+│  │  │  ├─ MessageInput            │  │  │
+│  │  │  └─ ConnectionStatus        │  │  │
+│  │  └─────────────────────────────┘  │  │
+│  │  SSEManager (EventSource)         │  │
+│  └───────────────────────────────────┘  │
 └────────────────┬────────────────────────┘
-                 │ HTTP/JSON
+                 │ HTTP/JSON + SSE流
 ┌────────────────▼────────────────────────┐
 │        后端 (Express + Node.js)         │
-│  ┌─────────┐  ┌─────────┐  ┌─────────┐ │
-│  │路由处理 │  │业务逻辑 │  │数据库层 │ │
-│  └─────────┘  └─────────┘  └─────────┘ │
+│  ┌───────────────────────────────────┐  │
+│  │  app.ts (Express应用)             │  │
+│  │  ┌─────────┐  ┌─────────┐        │  │
+│  │  │路由处理 │  │SSE管理器 │        │  │
+│  │  └─────────┘  └─────────┘        │  │
+│  │  ┌─────────┐  ┌─────────┐        │  │
+│  │  │控制器   │  │业务逻辑 │        │  │
+│  │  └─────────┘  └─────────┘        │  │
+│  └───────────────────────────────────┘  │
 └────────────────┬────────────────────────┘
                  │ SQL
 ┌────────────────▼────────────────────────┐
 │          数据库 (SQLite3)               │
 │  ┌─────────┐  ┌─────────┐  ┌─────────┐ │
 │  │ users   │  │ rooms   │  │messages │ │
+│  │ status  │  │         │  │         │ │
 │  └─────────┘  └─────────┘  └─────────┘ │
 └─────────────────────────────────────────┘
+
+数据流:
+1. 用户操作 → HTTP请求 → Express路由 → 控制器
+2. 控制器 → 数据库操作 → 响应
+3. 发送消息 → SSE广播 → 所有订阅客户端
+4. 房间切换 → 断开旧SSE → 建立新SSE
 ```
 
 ## 数据库设计
@@ -121,9 +182,20 @@ web-chat-system/
 | room_code | CHAR(6) | 6位数字房间号（唯一） |
 | room_name | TEXT | 房间名称 |
 | created_by | TEXT | 创建者ID |
+| admin_users | TEXT | 管理员列表(JSON) |
+| created_at | DATETIME | 创建时间 |
 | is_public | BOOLEAN | 是否公共房间 |
 
 > 公共大厅: room_code = "PUBLIC", id = 0, is_public = 1
+
+### user_status 表
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INTEGER | 自增主键 |
+| user_id | TEXT | 用户ID（唯一） |
+| room_id | INTEGER | 当前房间ID |
+| is_online | BOOLEAN | 是否在线 |
+| last_seen | DATETIME | 最后活跃时间 |
 
 ### messages 表
 | 字段 | 类型 | 说明 |
@@ -159,6 +231,8 @@ web-chat-system/
 | `/api/messages/send` | POST | 发送消息 |
 | `/api/messages/:roomId` | GET | 获取消息（轮询） |
 | `/api/messages/:roomId/latest` | GET | 获取最新消息 |
+| `/api/sse/:roomId` | GET | 建立SSE连接 |
+| `/api/sse/stats` | GET | 获取SSE连接统计 |
 
 **发送消息请求体：**
 ```json
@@ -166,6 +240,8 @@ web-chat-system/
 ```
 
 **轮询参数：** `?lastMessageId=100`
+
+**SSE连接：** `GET /api/sse/:roomId?userId=user123`
 
 ### 文件管理
 
@@ -176,28 +252,68 @@ web-chat-system/
 
 ## 核心机制
 
-### 消息轮询
+### 实时消息推送 (SSE)
 
-客户端每1秒向服务器请求新消息，使用 `lastMessageId` 实现增量获取：
+**客户端实现 (client/src/utils/SSEManager.ts):**
+- 使用原生 EventSource API
+- 指数退避重连机制 (最多5次)
+- 支持事件类型: connected, newMessage, userStatus, error
 
+**服务端实现 (server/src/utils/SSEManager.ts):**
+- 单例模式管理所有连接
+- 房间订阅模型
+- 自动清理断开的连接
+
+**SSE事件示例：**
 ```typescript
-// 轮询请求
-GET /api/messages/1?lastMessageId=100
+// 连接确认
+{ "type": "connected", "data": { "roomId": 1, "userId": "user123", "timestamp": "..." } }
 
-// 响应
-{
-  "success": true,
-  "hasNew": true,
-  "messages": [{ "id": 101, "userId": "user1", "content": "Hi" }]
+// 新消息推送
+{ "type": "newMessage", "data": { "id": 101, "userId": "user1", "content": "Hello", "messageType": "text", "createdAt": "..." } }
+
+// 用户状态变化
+{ "type": "userStatus", "data": { "userId": "user456", "status": "online", "timestamp": "..." } }
+```
+
+**SSE优势：**
+- ✅ 真正的实时推送，无延迟
+- ✅ 自动重连机制 (指数退避)
+- ✅ 资源消耗低 (相比轮询)
+- ✅ 原生浏览器支持
+- ✅ 无需WebSocket复杂配置
+
+### 状态管理 (React Context + useReducer)
+
+**实现位置:** `client/src/context/ChatContext.tsx`
+
+**状态结构:**
+```typescript
+interface AppState {
+    currentUser: string;      // 当前用户ID
+    currentRoom: Room;        // 当前房间
+    messages: Message[];      // 消息列表
+    rooms: Room[];            // 已加入房间
+    isConnected: boolean;     // 连接状态
+    isLoading: boolean;       // 加载状态
 }
 ```
+
+**Action类型:**
+- SET_USER / SET_ROOM - 设置用户/房间
+- SET_MESSAGES / ADD_MESSAGES - 设置/添加消息
+- SET_LOADING / SET_CONNECTED - 设置状态
 
 ### 房间切换流程
 
 1. 用户输入6位房间号
 2. 尝试加入房间 (`/api/rooms/join/:code`)
 3. 若房间不存在，自动创建 (`/api/rooms/create`)
-4. 停止旧房间轮询，启动新房间轮询
+4. **更新React Context状态**
+5. 断开旧房间SSE连接
+6. 建立新房间SSE连接
+7. 获取历史消息 (`/api/messages/:roomId/latest`)
+8. 等待SSE实时推送
 
 ## 环境配置
 
@@ -256,6 +372,12 @@ server {
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
+        
+        # SSE特殊配置
+        proxy_set_header Connection '';
+        proxy_set_header Cache-Control no-cache;
+        proxy_set_header X-Accel-Buffering no;
+        proxy_buffering off;
     }
 
     location /uploads {
@@ -264,6 +386,23 @@ server {
     }
 }
 ```
+
+### SSE部署注意事项
+
+1. **反向代理配置**
+   - 必须禁用缓冲：`proxy_buffering off`
+   - 设置连接头为空：`proxy_set_header Connection ''`
+   - 禁用缓存：`proxy_set_header Cache-Control no-cache`
+
+2. **负载均衡**
+   - SSE连接需要会话保持
+   - 使用IP哈希或一致性哈希算法
+   - 避免跨服务器连接问题
+
+3. **监控指标**
+   - 连接数量监控
+   - 消息延迟监控
+   - 重连频率监控
 
 ## 常见问题
 

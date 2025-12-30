@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useChat } from '../context/ChatContext';
-import { MessagePoller } from '../utils/MessagePoller';
+import { SSEManager } from '../utils/SSEManager';
 import { messageAPI } from '../utils/api';
 import ChatHeader from './ChatHeader';
 import RoomSelector from './RoomSelector';
@@ -11,40 +11,54 @@ import styles from './ChatContainer.module.css';
 
 const ChatContainer: React.FC = () => {
     const { state, setRoom, setMessages, addMessages, setLoading } = useChat();
-    const pollerRef = useRef<MessagePoller | null>(null);
+    const sseManagerRef = useRef<SSEManager | null>(null);
+    const [connectionStatus, setConnectionStatus] = useState<string>('未连接');
 
     useEffect(() => {
         if (state.currentUser && state.currentRoom) {
-            startPolling(state.currentRoom);
+            startSSE(state.currentRoom);
         }
 
         return () => {
-            pollerRef.current?.stop();
+            sseManagerRef.current?.destroy();
         };
     }, [state.currentUser]);
 
-    const startPolling = async (room: Room) => {
-        pollerRef.current?.stop();
+    const startSSE = async (room: Room) => {
+        // 清理旧的连接
+        if (sseManagerRef.current) {
+            sseManagerRef.current.destroy();
+        }
 
         try {
             setLoading(true);
-            const data = await messageAPI.getLatestMessages(room.id, 50);
             
+            // 先获取历史消息
+            const data = await messageAPI.getLatestMessages(room.id, 50);
             if (data.success) {
                 setMessages(data.messages);
-                
-                const lastMessageId = data.messages.length > 0 
-                    ? data.messages[data.messages.length - 1].id 
-                    : 0;
-
-                pollerRef.current = new MessagePoller(room.id, addMessages);
-                pollerRef.current.setLastMessageId(lastMessageId);
-                pollerRef.current.start();
             }
+
+            // 创建SSE管理器
+            sseManagerRef.current = new SSEManager(
+                addMessages, // 新消息回调
+                (connectedData) => {
+                    console.log('SSE连接成功:', connectedData);
+                    setConnectionStatus('已连接');
+                },
+                (error) => {
+                    console.error('SSE连接错误:', error);
+                    setConnectionStatus('连接错误');
+                }
+            );
+
+            // 连接到SSE
+            sseManagerRef.current.connect(room.id, state.currentUser);
+            setConnectionStatus('连接中');
+
         } catch (error) {
-            console.error('加载消息失败:', error);
-            pollerRef.current = new MessagePoller(room.id, addMessages);
-            pollerRef.current.start();
+            console.error('启动SSE失败:', error);
+            setConnectionStatus('连接失败');
         } finally {
             setLoading(false);
         }
@@ -52,7 +66,7 @@ const ChatContainer: React.FC = () => {
 
     const handleRoomChange = async (room: Room) => {
         setRoom(room);
-        await startPolling(room);
+        await startSSE(room);
     };
 
     const handleSendMessage = async (content: string, messageType = 'text', fileData?: any) => {
@@ -73,10 +87,8 @@ const ChatContainer: React.FC = () => {
             const data = await messageAPI.sendMessage(requestData);
 
             if (data.success) {
-                // 立即触发轮询获取最新消息
-                setTimeout(() => {
-                    pollerRef.current?.fetchMessages();
-                }, 100);
+                // 消息会通过SSE自动推送，无需手动获取
+                console.log('消息发送成功，等待SSE推送');
             } else {
                 alert(data.message || '发送失败');
             }
@@ -93,9 +105,10 @@ const ChatContainer: React.FC = () => {
 
     return (
         <div className={styles.container}>
-            <ChatHeader 
-                username={state.currentUser} 
-                onLogout={handleLogout} 
+            <ChatHeader
+                username={state.currentUser}
+                onLogout={handleLogout}
+                connectionStatus={connectionStatus}
             />
             
             <RoomSelector

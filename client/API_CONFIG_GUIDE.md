@@ -1,7 +1,7 @@
 # API 配置指南
 
 ## 概述
-前端项目已完全使用环境变量控制所有后端API设置，不再有任何硬编码的API地址。
+前端项目已完全使用环境变量控制所有后端API设置，包括SSE连接配置。所有API通信基于Server-Sent Events (SSE)实现实时消息推送。
 
 ## 环境变量配置
 
@@ -9,12 +9,12 @@
 
 | 变量名 | 说明 | 默认值 | 示例 |
 |--------|------|--------|------|
-| `VITE_API_BASE_URL` | 主要API基础URL | `http://localhost:3001` | `https://api.yourdomain.com` |
-| `VITE_DEFAULT_API_URL` | 备用API URL | `http://localhost:3001` | `https://backup-api.yourdomain.com` |
+| `VITE_API_BASE_URL` | API基础URL | `/api` | `https://api.yourdomain.com` |
 | `VITE_API_TIMEOUT` | API请求超时时间(ms) | `10000` | `15000` |
 | `VITE_NODE_ENV` | 环境类型 | `development` | `production` |
 | `VITE_ENABLE_LOGGING` | 启用API日志 | `true` | `false` |
-| `VITE_ENABLE_DEBUG` | 启用调试模式 | `true` | `false` |
+
+> **注意**: SSE连接使用 `VITE_API_BASE_URL` + `/sse/:roomId` 自动构建
 
 ## 快速设置
 
@@ -60,22 +60,18 @@ PROD_API_URL=https://my-api.example.com node scripts/setup-env.js production
 
 ### 开发环境 (.env)
 ```env
-VITE_API_BASE_URL=http://localhost:3001
-VITE_DEFAULT_API_URL=http://localhost:3001
+VITE_API_BASE_URL=/api
 VITE_API_TIMEOUT=10000
 VITE_NODE_ENV=development
 VITE_ENABLE_LOGGING=true
-VITE_ENABLE_DEBUG=true
 ```
 
 ### 生产环境 (.env.production)
 ```env
 VITE_API_BASE_URL=https://api.yourdomain.com
-VITE_DEFAULT_API_URL=https://api.yourdomain.com
 VITE_API_TIMEOUT=15000
 VITE_NODE_ENV=production
 VITE_ENABLE_LOGGING=false
-VITE_ENABLE_DEBUG=false
 ```
 
 ## 部署注意事项
@@ -124,3 +120,15 @@ console.log('Environment:', import.meta.env.VITE_NODE_ENV);
 ### 3. 代理配置问题
 - 开发环境下，Vite会自动代理 `/api` 请求到配置的后端地址
 - 生产环境需要确保前端和后端部署在正确的域名下
+
+### 4. SSE连接失败
+- 检查浏览器控制台是否有连接错误
+- 确认后端SSE端点可访问: `GET /api/sse/:roomId?userId=:userId`
+- 验证Nginx配置包含SSE禁用缓冲设置
+- 检查CORS配置是否正确
+
+### 5. 消息无法实时推送
+- 检查 `ConnectionStatus` 组件显示状态
+- 验证SSEManager是否正确初始化
+- 查看浏览器网络面板确认SSE连接状态
+- 检查后端日志确认SSE广播是否成功
