@@ -5,9 +5,9 @@
   "main": "dist/app.js",
   "scripts": {
     "dev": "bun --watch src/app.ts",
-    "build": "bun build src/app.ts --outdir dist --target node",
+    "build": "bun build src/app.ts --outdir dist --target node --external sqlite3 --external express --external cors --external dotenv --external multer",
     "start": "bun dist/app.js",
-    "merge": "cd .. && cd client && bun run build && cd ../server && bun --watch src/app.ts"
+    "merge": "cd .. && cd client && bun run build && cd ../server && bun run build && bun dist/app.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
