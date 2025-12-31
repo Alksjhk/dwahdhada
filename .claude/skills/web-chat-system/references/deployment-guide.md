@@ -140,15 +140,19 @@ cd server
 bun run build
 ```
 
-### 2. Database Setup
+### 2. Database Setup (PostgreSQL)
 
+**For Neon Cloud Database:**
+1. Create project at https://console.neon.tech
+2. Get connection string from connection details
+3. Set environment variables:
+   ```bash
+   export POSTGRES_URL="postgres://user:password@ep-xxx-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+   ```
+
+**Run migrations:**
 ```bash
 cd server
-
-# Initialize database
-bun run db:init
-
-# Run migrations
 bun run db:migrate
 ```
 
@@ -165,7 +169,7 @@ chmod 755 uploads
 **Production Backend** (`server/.env`):
 ```env
 PORT=3001
-DATABASE_PATH=/var/www/chat-system/database/chat.db
+POSTGRES_URL=postgres://user:password@ep-xxx-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
 NODE_ENV=production
 UPLOAD_DIR=/var/www/chat-system/uploads
 MAX_FILE_SIZE=10485760
@@ -200,8 +204,7 @@ VITE_API_BASE_URL=https://yourdomain.com/api bun run build
 chown -R www-data:www-data /var/www/chat-system
 chmod -R 755 /var/www/chat-system
 
-# Database and uploads
-chmod 660 /var/www/chat-system/server/database/chat.db
+# Uploads directory
 chmod 775 /var/www/chat-system/server/uploads
 ```
 
@@ -509,28 +512,31 @@ services:
       - "3001:3001"
     volumes:
       - ./server/uploads:/app/uploads
-      - ./server/database:/app/database
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - DATABASE_PATH=/app/database/chat.db
+      - POSTGRES_URL=${POSTGRES_URL}
       - UPLOAD_DIR=/app/uploads
     restart: unless-stopped
-
-  client:
-    build:
-      context: ./client
-      dockerfile: Dockerfile
-      container_name: chat-client
-    ports:
-      - "80:80"
     depends_on:
-      - server
+      - postgres
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: chat-postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-chat_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-chat_password}
+      - POSTGRES_DB=${POSTGRES_DATABASE:-chat_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     restart: unless-stopped
 
 volumes:
   uploads:
-  database:
+  postgres_data:
 ```
 
 ### Run Docker
@@ -748,17 +754,23 @@ PORT=3002
 
 ### Database Locked
 
+**For PostgreSQL, check:**
+1. Connection string is correct
+2. Database exists and is accessible
+3. SSL mode settings for production
+4. Connection pool configuration
+
 ```bash
-# Check for journal files
-ls -la server/database/
+# Test connection
+psql "${POSTGRES_URL}"
 
-# Remove journal files
-rm server/database/chat.db-journal
-rm server/database/chat.db-wal
-
-# Restart application
-pm2 restart chat-server
+# Check active connections
+SELECT count(*) FROM pg_stat_activity;
 ```
+
+**For Neon specific:**
+- Check connection pooler settings
+- Verify IP allowlist in Neon console
 
 ### SSE Connection Issues
 
@@ -1017,8 +1029,8 @@ sudo systemctl reload nginx
    - Configure multiple backend instances
 
 2. **Database:**
-   - Migrate to PostgreSQL/MySQL for better performance
-   - Use read replicas for scaling reads
+   - PostgreSQL already supports better concurrent connections
+   - Use read replicas for scaling reads (Neon supports read replicas)
 
 3. **Session Management:**
    - Use Redis for session storage

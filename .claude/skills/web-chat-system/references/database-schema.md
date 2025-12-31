@@ -3,12 +3,12 @@
 Complete database schema for the Web Chat System.
 
 ## Database Type
-**SQLite 3** - Lightweight, file-based database
+**PostgreSQL** - Production-grade relational database
 
 ## Database Location
 ```
-Development: server/database/chat.db
-Production: Configured via DATABASE_PATH environment variable
+Production: Neon Cloud Database (https://console.neon.tech)
+Connection: Configured via POSTGRES_URL environment variable
 ```
 
 ## Tables
@@ -19,9 +19,9 @@ User registration and tracking table.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
-| id | INTEGER | PRIMARY KEY, AUTOINCREMENT | Internal user identifier |
-| user_id | TEXT | UNIQUE, NOT NULL | User-provided identifier |
-| created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP | Registration timestamp |
+| id | SERIAL | PRIMARY KEY | Internal user identifier |
+| user_id | VARCHAR(50) | UNIQUE, NOT NULL | User-provided identifier |
+| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Registration timestamp |
 
 **Purpose:** Track registered users without requiring formal authentication.
 
@@ -59,19 +59,19 @@ Chat room configuration table.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
-| id | INTEGER | PRIMARY KEY, AUTOINCREMENT | Internal room identifier |
+| id | SERIAL | PRIMARY KEY | Internal room identifier |
 | room_code | CHAR(6) | UNIQUE, NOT NULL | 6-digit room number |
 | room_name | TEXT | DEFAULT '私密房间' | Display name |
-| created_by | TEXT | - | Creator's user ID |
+| created_by | VARCHAR(50) | - | Creator's user ID |
 | admin_users | TEXT | - | JSON array of admin user IDs |
-| created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP | Creation timestamp |
-| is_public | BOOLEAN | DEFAULT 0 | Public/private flag (0=private, 1=public) |
+| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Creation timestamp |
+| is_public | BOOLEAN | DEFAULT false | Public/private flag |
 
 **Purpose:** Manage both public lobby and private chat rooms.
 
 **Special Cases:**
-- **Public Lobby**: `id=0`, `room_code='PUBLIC'`, `is_public=1`, `room_name='公共大厅'`
-- **Private Rooms**: `id>0`, `room_code='000000'-'999999'`, `is_public=0`
+- **Public Lobby**: `id=0`, `room_code='PUBLIC'`, `is_public=true`, `room_name='公共大厅'`
+- **Private Rooms**: `id>0`, `room_code='000000'-'999999'`, `is_public=false`
 
 **Indexes:**
 ```sql
@@ -126,11 +126,11 @@ User online presence and current room tracking.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
-| id | INTEGER | PRIMARY KEY, AUTOINCREMENT | Internal identifier |
-| user_id | TEXT | UNIQUE, NOT NULL | User identifier |
+| id | SERIAL | PRIMARY KEY | Internal identifier |
+| user_id | VARCHAR(50) | UNIQUE, NOT NULL | User identifier |
 | room_id | INTEGER | FOREIGN KEY → rooms.id | Current room |
-| is_online | BOOLEAN | DEFAULT 0 | Online status flag |
-| last_seen | DATETIME | DEFAULT CURRENT_TIMESTAMP | Last activity timestamp |
+| is_online | BOOLEAN | DEFAULT false | Online status flag |
+| last_seen | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Last activity timestamp |
 
 **Purpose:** Track user presence and current room for online status features.
 
@@ -187,14 +187,14 @@ GROUP BY room_id;
 
 -- Clean up inactive users (older than 1 hour)
 DELETE FROM user_status
-WHERE last_seen < datetime('now', '-1 hour');
+WHERE last_seen < NOW() - INTERVAL '1 hour';
 ```
 
 **Presence Detection:**
 ```sql
 -- Get users who were active in last 5 minutes
 SELECT * FROM user_status
-WHERE last_seen > datetime('now', '-5 minutes');
+WHERE last_seen > NOW() - INTERVAL '5 minutes';
 ```
 
 ---
@@ -205,15 +205,15 @@ Chat message storage with support for text and file attachments.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
-| id | INTEGER | PRIMARY KEY, AUTOINCREMENT | Message identifier (used for polling) |
+| id | SERIAL | PRIMARY KEY | Message identifier (used for polling) |
 | room_id | INTEGER | FOREIGN KEY → rooms.id, NOT NULL | Target room |
-| user_id | TEXT | NOT NULL | Sender's user ID |
+| user_id | VARCHAR(50) | NOT NULL | Sender's user ID |
 | content | TEXT | NOT NULL | Message text or file description |
-| message_type | TEXT | DEFAULT 'text' | Type: 'text', 'image', 'file' |
+| message_type | VARCHAR(20) | DEFAULT 'text' | Type: 'text', 'image', 'file' |
 | file_name | TEXT | - | Original filename (if file) |
 | file_size | INTEGER | - | File size in bytes (if file) |
 | file_url | TEXT | - | Download URL (if file) |
-| created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP | Message timestamp |
+| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Message timestamp |
 
 **Purpose:** Store all chat messages with incremental ID support for efficient polling.
 
@@ -289,7 +289,7 @@ ORDER BY created_at DESC;
 
 -- Delete old messages (cleanup)
 DELETE FROM messages
-WHERE created_at < datetime('now', '-30 days');
+WHERE created_at < NOW() - INTERVAL '30 days';
 
 -- Get latest message in room
 SELECT * FROM messages
@@ -343,44 +343,42 @@ rooms (1) ----< (N) messages
 ```sql
 -- Create users table
 CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id TEXT UNIQUE NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
--- Create user_status table
-CREATE TABLE IF NOT EXISTS user_status (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id TEXT UNIQUE NOT NULL,
-    room_id INTEGER,
-    is_online BOOLEAN DEFAULT 0,
-    last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (room_id) REFERENCES rooms(id)
+    id SERIAL PRIMARY KEY,
+    user_id VARCHAR(50) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create rooms table
 CREATE TABLE IF NOT EXISTS rooms (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     room_code CHAR(6) UNIQUE NOT NULL,
     room_name TEXT DEFAULT '私密房间',
-    created_by TEXT,
+    created_by VARCHAR(50),
     admin_users TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    is_public BOOLEAN DEFAULT 0
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_public BOOLEAN DEFAULT false
+);
+
+-- Create user_status table
+CREATE TABLE IF NOT EXISTS user_status (
+    id SERIAL PRIMARY KEY,
+    user_id VARCHAR(50) UNIQUE NOT NULL,
+    room_id INTEGER REFERENCES rooms(id),
+    is_online BOOLEAN DEFAULT false,
+    last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create messages table
 CREATE TABLE IF NOT EXISTS messages (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    room_id INTEGER NOT NULL,
-    user_id TEXT NOT NULL,
+    id SERIAL PRIMARY KEY,
+    room_id INTEGER NOT NULL REFERENCES rooms(id),
+    user_id VARCHAR(50) NOT NULL,
     content TEXT NOT NULL,
-    message_type TEXT DEFAULT 'text',
+    message_type VARCHAR(20) DEFAULT 'text',
     file_name TEXT,
     file_size INTEGER,
     file_url TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (room_id) REFERENCES rooms(id)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create indexes
@@ -395,8 +393,9 @@ CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
 CREATE INDEX IF NOT EXISTS idx_messages_id ON messages(id);
 
 -- Insert public lobby
-INSERT OR IGNORE INTO rooms (id, room_code, room_name, is_public)
-VALUES (0, 'PUBLIC', '公共大厅', 1);
+INSERT INTO rooms (id, room_code, room_name, is_public)
+VALUES (0, 'PUBLIC', '公共大厅', true)
+ON CONFLICT (id) DO NOTHING;
 ```
 
 ---
@@ -463,62 +462,72 @@ SELECT * FROM messages WHERE content LIKE '%search%';
 ### Database Maintenance
 
 ```sql
--- Rebuild database (optimize)
-VACUUM;
+-- Check table sizes
+SELECT relname, pg_size_pretty(pg_relation_size(relid))
+FROM pg_stat_user_tables
+ORDER BY pg_relation_size(relid) DESC;
 
--- Update statistics
-ANALYZE;
+-- Vacuum analyze for performance
+VACUUM ANALYZE;
 
--- Check integrity
-PRAGMA integrity_check;
+-- Check for index bloat
+SELECT schemaname, tablename, indexname, pg_size_pretty(indexsize), idx_scan
+FROM pg_stat_user_indexes
+ORDER BY indexsize DESC;
 ```
 
-### Cleanup Jobs
+### Cleanup Jobs (PostgreSQL)
 
 ```sql
 -- Delete messages older than 30 days
 DELETE FROM messages
-WHERE created_at < datetime('now', '-30 days');
+WHERE created_at < NOW() - INTERVAL '30 days';
 
 -- Delete inactive users (no activity for 7 days)
 DELETE FROM user_status
-WHERE last_seen < datetime('now', '-7 days');
+WHERE last_seen < NOW() - INTERVAL '7 days';
 ```
 
 ---
 
 ## Backup and Restore
 
-### Backup
+### Backup (Neon Cloud)
 
+**Automated Backups:**
+Neon automatically creates daily backups. You can restore from the Neon console.
+
+**Manual Export:**
 ```bash
-# Simple file copy
-cp server/database/chat.db backup/chat-$(date +%Y%m%d).db
+# Export using pg_dump
+pg_dump "${POSTGRES_URL}" > backup-$(date +%Y%m%d).sql
 
-# SQLite backup command
-sqlite3 server/database/chat.db ".backup backup/chat.db"
+# Or using connection string
+pg_dump "postgres://user:password@host:5432/database" > backup.sql
 ```
 
 ### Restore
-
 ```bash
-# Restore from backup
-cp backup/chat-20240101.db server/database/chat.db
+# Restore from SQL dump
+psql "${POSTGRES_URL}" < backup-20240101.sql
 ```
 
-### Automated Backup Script
+### Scheduled Backup Script
 
 ```bash
 #!/bin/bash
 DATE=$(date +%Y%m%d_%H%M%S)
 BACKUP_DIR="/path/to/backups"
-DB_PATH="/path/to/chat.db"
 
 mkdir -p $BACKUP_DIR
-sqlite3 $DB_PATH ".backup $BACKUP_DIR/chat-$DATE.db"
+
+# pg_dump with compression
+pg_dump "${POSTGRES_URL}" | gzip > $BACKUP_DIR/chat-$DATE.sql.gz
 
 # Keep only last 7 days
-find $BACKUP_DIR -name "chat-*.db" -mtime +7 -delete
+find $BACKUP_DIR -name "chat-*.sql.gz" -mtime +7 -delete
+
+echo "Backup completed: chat-$DATE.sql.gz"
 ```
 
 ---
@@ -529,13 +538,15 @@ find $BACKUP_DIR -name "chat-*.db" -mtime +7 -delete
 
 **Good (Parameterized):**
 ```typescript
-db.get('SELECT * FROM users WHERE user_id = ?', [userId]);
+db.query('SELECT * FROM users WHERE user_id = $1', [userId]);
 ```
 
 **Bad (String Concatenation):**
 ```typescript
-db.get(`SELECT * FROM users WHERE user_id = '${userId}'`);
+db.query(`SELECT * FROM users WHERE user_id = '${userId}'`);
 ```
+
+**Important:** PostgreSQL uses `$1, $2, ...` for parameterized queries.
 
 ### Data Validation
 

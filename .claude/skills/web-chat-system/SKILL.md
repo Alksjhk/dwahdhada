@@ -1,6 +1,6 @@
 ---
 name: web-chat-system
-description: This skill provides comprehensive guidance for the Web Chat System project, a lightweight real-time chat application built with React + Node.js + SQLite. Use this skill when working with any aspect of the chat system development, maintenance, debugging, or deployment. It includes project architecture, API specifications, database schema, SSE implementation details, component structure, and development workflows.
+description: This skill provides comprehensive guidance for the Web Chat System project, a lightweight real-time chat application built with React + Node.js + PostgreSQL. Use this skill when working with any aspect of the chat system development, maintenance, debugging, or deployment. It includes project architecture, API specifications, database schema, SSE implementation details, component structure, and development workflows.
 ---
 
 # Web Chat System Development Skill
@@ -12,9 +12,9 @@ This skill provides comprehensive guidance for developing, maintaining, and depl
 The Web Chat System is a full-stack chat application built with:
 
 - **Frontend**: React 18 + TypeScript + Vite + Server-Sent Events (SSE)
-- **Backend**: Node.js + Express + SQLite3 + TypeScript + SSE
+- **Backend**: Node.js + Express + PostgreSQL + TypeScript + SSE
 - **Package Manager**: Bun 1.0+
-- **Database**: SQLite3
+- **Database**: PostgreSQL
 - **Real-time Communication**: Server-Sent Events (SSE)
 
 **Key Features**:
@@ -23,7 +23,7 @@ The Web Chat System is a full-stack chat application built with:
 - Real-time message delivery via SSE
 - File upload support (images, documents, max 10MB)
 - Responsive design for desktop and mobile
-- Message persistence in SQLite
+- Message persistence in PostgreSQL
 
 ## When to Use This Skill
 
@@ -90,7 +90,7 @@ web-chat-system/
 │   │   ├── app.ts                  # Express app setup
 │   │   └── types.ts               # Backend type definitions
 │   ├── database/
-│   │   └── chat.db                # SQLite database file
+│   │   └── chat.db                # PostgreSQL database
 │   ├── uploads/                    # File upload directory
 │   └── package.json
 │
@@ -159,30 +159,30 @@ Response + SSE Broadcast (utils/SSEManager.ts)
 ### Tables
 
 **users**: User information
-- `id` (INTEGER, PK, AUTOINCREMENT)
+- `id` (INTEGER, PK, SERIAL) - Auto-increment primary key
 - `user_id` (TEXT, UNIQUE) - Custom user ID
-- `created_at` (DATETIME) - Registration time
+- `created_at` (TIMESTAMP) - Registration time
 
 **rooms**: Chat rooms
-- `id` (INTEGER, PK, AUTOINCREMENT)
+- `id` (INTEGER, PK, SERIAL) - Auto-increment primary key
 - `room_code` (CHAR(6), UNIQUE) - 6-digit room number
 - `room_name` (TEXT) - Room display name
 - `created_by` (TEXT) - Creator user ID
 - `admin_users` (TEXT) - JSON array of admin IDs
-- `created_at` (DATETIME) - Creation time
+- `created_at` (TIMESTAMP) - Creation time
 - `is_public` (BOOLEAN) - 0=private, 1=public lobby
 
-> Special case: Public lobby has `id=0`, `room_code='PUBLIC'`, `is_public=1`
+> Special case: Public lobby has `id=0`, `room_code='PUBLIC'`, `is_public=true`
 
 **user_status**: User online status
-- `id` (INTEGER, PK, AUTOINCREMENT)
+- `id` (INTEGER, PK, SERIAL) - Auto-increment primary key
 - `user_id` (TEXT, UNIQUE) - User identifier
 - `room_id` (INTEGER, FK) - Current room
 - `is_online` (BOOLEAN) - Online status
-- `last_seen` (DATETIME) - Last activity
+- `last_seen` (TIMESTAMP) - Last activity
 
 **messages**: Chat messages
-- `id` (INTEGER, PK, AUTOINCREMENT) - Used for incremental polling
+- `id` (INTEGER, PK, SERIAL) - Used for incremental polling
 - `room_id` (INTEGER, FK) - Room identifier
 - `user_id` (TEXT) - Sender
 - `content` (TEXT) - Message content
@@ -190,7 +190,7 @@ Response + SSE Broadcast (utils/SSEManager.ts)
 - `file_name` (TEXT) - Original filename
 - `file_size` (INTEGER) - File size in bytes
 - `file_url` (TEXT) - Download URL
-- `created_at` (DATETIME) - Timestamp
+- `created_at` (TIMESTAMP) - Timestamp
 
 **Indexes**:
 - `idx_users_user_id` ON users(user_id)
@@ -317,10 +317,11 @@ bun start            # Production server
 5. Check `SSEManager.isConnected()` status
 
 **Database Issues**:
-1. Check SQLite file permissions
-2. Verify table schemas with SQLite browser
+1. Check PostgreSQL connection string
+2. Verify database permissions
 3. Run migration scripts
 4. Check database logs in console
+5. Ensure SSL mode is correct for production
 
 ## Deployment
 
@@ -370,7 +371,7 @@ bun run build       # Build to dist/
 **Server** (`server/.env`):
 ```env
 PORT=3001
-DATABASE_PATH=./database/chat.db
+POSTGRES_URL=postgres://user:password@host:5432/database?sslmode=require
 NODE_ENV=development
 UPLOAD_DIR=./uploads
 MAX_FILE_SIZE=10485760

@@ -157,3 +157,5 @@ storybook-static
 
 # ==================== VSCode测试版本 ====================
 .vscode-test
+
+server/.env

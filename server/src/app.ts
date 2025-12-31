@@ -7,7 +7,6 @@ import messageRoutes from './routes/messageRoutes';
 import fileRoutes from './routes/fileRoutes';
 import sseRoutes from './routes/sseRoutes';
 import { initializeDatabase } from './database/init';
-import { migrateDatabase } from './database/migrate';
 
 // 加载环境变量
 dotenv.config();
@@ -112,29 +111,17 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 // 初始化数据库并启动服务器
 async function startServer() {
     try {
-        const dbPath = process.env.DATABASE_PATH || './database/chat.db';
-        
-        // 确保数据库目录存在
-        const dbDir = path.dirname(dbPath);
-        const fs = await import('fs');
-        if (!fs.existsSync(dbDir)) {
-            fs.mkdirSync(dbDir, { recursive: true });
-            console.log('创建数据库目录:', dbDir);
-        }
+        // 初始化PostgreSQL数据库
+        await initializeDatabase();
 
-        await initializeDatabase(dbPath);
-        
-        // 运行数据库迁移
-        await migrateDatabase(dbPath);
-        
         app.listen(PORT, () => {
             if (isProduction) {
                 console.log(`🚀 生产服务器启动成功 - 端口: ${PORT}`);
-                console.log(`📊 数据库: ${dbPath}`);
+                console.log(`📊 数据库: PostgreSQL (${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME})`);
                 console.log(`🌍 环境: production`);
             } else {
                 console.log(`🚀 开发服务器运行在 http://localhost:${PORT}`);
-                console.log(`📊 数据库路径: ${dbPath}`);
+                console.log(`📊 数据库: PostgreSQL (${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME})`);
                 console.log(`🌍 环境: ${process.env.NODE_ENV || 'development'}`);
             }
         });

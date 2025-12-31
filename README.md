@@ -1,6 +1,6 @@
 # 轻量级网页聊天系统
 
-基于 React + Node.js + SQLite 的轻量级实时聊天系统，支持公共大厅和私密房间功能，使用 Server-Sent Events (SSE) 实现实时消息推送。
+基于 React + Node.js + PostgreSQL 的轻量级实时聊天系统，支持公共大厅和私密房间功能，使用 Server-Sent Events (SSE) 实现实时消息推送。
 
 ## 🎯 项目特性
 
@@ -10,7 +10,7 @@
 - **实时消息** - Server-Sent Events (SSE) 实时消息推送
 - **文件上传** - 支持图片、文档等（最大10MB）
 - **响应式设计** - 支持桌面端和移动端
-- **消息持久化** - SQLite数据库存储
+- **消息持久化** - PostgreSQL数据库存储
 - **合并部署** - 前后端一体化部署，单端口运行
 
 ## 🛠️ 技术栈
@@ -18,7 +18,7 @@
 | 层级 | 技术 |
 |------|------|
 | 前端 | React 18 + TypeScript + Vite + Axios + CSS Modules + SSE |
-| 后端 | Node.js + Express + SQLite3 + TypeScript + Multer + SSE |
+| 后端 | Node.js + Express + PostgreSQL + TypeScript + Multer + SSE |
 | 包管理 | Bun 1.0+ |
 | 状态管理 | React Context + useReducer |
 
@@ -120,8 +120,7 @@ dwahdhada/
 │   │   │   └── SSEManager.ts   # SSE服务端管理器
 │   │   ├── types.ts            # TypeScript类型定义
 │   │   └── app.ts              # Express应用入口 (支持合并部署)
-│   ├── database/               # SQLite数据库文件
-│   │   └── chat.db
+│   ├── database/           # PostgreSQL数据库
 │   ├── uploads/                # 文件上传目录
 │   ├── .env                    # 环境变量
 │   ├── package.json
@@ -168,7 +167,7 @@ dwahdhada/
 └────────────────┬────────────────────────┘
                  │ SQL
 ┌────────────────▼────────────────────────┐
-│          数据库 (SQLite3)               │
+│          数据库 (PostgreSQL)            │
 │  ┌─────────┐  ┌─────────┐  ┌─────────┐ │
 │  │ users   │  │ rooms   │  │messages │ │
 │  │ status  │  │         │  │         │ │
@@ -187,43 +186,43 @@ dwahdhada/
 ### users 表
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| id | INTEGER | 自增主键 |
-| user_id | TEXT | 用户自定义ID（唯一） |
-| created_at | DATETIME | 创建时间 |
+| id | SERIAL | 自增主键 |
+| user_id | VARCHAR(50) | 用户自定义ID（唯一） |
+| created_at | TIMESTAMP | 创建时间 |
 
 ### rooms 表
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| id | INTEGER | 自增主键 |
+| id | SERIAL | 自增主键 |
 | room_code | CHAR(6) | 6位数字房间号（唯一） |
 | room_name | TEXT | 房间名称 |
-| created_by | TEXT | 创建者ID |
+| created_by | VARCHAR(50) | 创建者ID |
 | admin_users | TEXT | 管理员列表(JSON) |
-| created_at | DATETIME | 创建时间 |
+| created_at | TIMESTAMP | 创建时间 |
 | is_public | BOOLEAN | 是否公共房间 |
 
-> 公共大厅: room_code = "PUBLIC", id = 0, is_public = 1
+> 公共大厅: room_code = 'PUBLIC', id = 0, is_public = true
 
 ### user_status 表
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| id | INTEGER | 自增主键 |
-| user_id | TEXT | 用户ID（唯一） |
+| id | SERIAL | 自增主键 |
+| user_id | VARCHAR(50) | 用户ID（唯一） |
 | room_id | INTEGER | 当前房间ID |
 | is_online | BOOLEAN | 是否在线 |
-| last_seen | DATETIME | 最后活跃时间 |
+| last_seen | TIMESTAMP | 最后活跃时间 |
 
 ### messages 表
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| id | INTEGER | 自增主键 |
+| id | SERIAL | 自增主键 |
 | room_id | INTEGER | 房间ID |
-| user_id | TEXT | 发送者ID |
+| user_id | VARCHAR(50) | 发送者ID |
 | content | TEXT | 消息内容 |
-| message_type | TEXT | 类型(text/image/file) |
+| message_type | VARCHAR(20) | 类型(text/image/file) |
 | file_name | TEXT | 文件名 |
 | file_url | TEXT | 文件URL |
-| created_at | DATETIME | 发送时间 |
+| created_at | TIMESTAMP | 发送时间 |
 
 ## API接口
 
@@ -347,10 +346,9 @@ VITE_ENABLE_DEBUG=false
 ### 后端配置 (server/.env)
 ```env
 PORT=3001
-DATABASE_PATH=./database/chat.db
 NODE_ENV=production
-UPLOAD_DIR=./uploads
-MAX_FILE_SIZE=10485760
+# PostgreSQL数据库配置
+POSTGRES_URL=postgres://user:password@host:5432/database?sslmode=require
 # CORS配置 (生产环境)
 CORS_ORIGIN=https://yourdomain.com
 ```

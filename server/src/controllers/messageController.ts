@@ -40,7 +40,7 @@ export class MessageController {
         try {
             // 验证房间存在（公共大厅roomId=0跳过验证）
             if (roomId !== 0) {
-                const room = await db.get('SELECT id FROM rooms WHERE id = ?', [roomId]);
+                const room = await db.get('SELECT id FROM rooms WHERE id = $1', [roomId]);
                 if (!room) {
                     return res.json({
                         success: false,
@@ -49,19 +49,19 @@ export class MessageController {
                 }
             }
 
-            // 插入消息
+            // 插入消息并返回ID
             const result = await db.run(
                 `INSERT INTO messages (room_id, user_id, content, message_type, file_name, file_size, file_url)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                 VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
                 [roomId, userId, content.trim(), messageType, fileName || null, fileSize || null, fileUrl || null]
             );
 
             // 获取完整的消息信息
             const newMessage: Message = await db.get(
-                `SELECT id, user_id as userId, content, message_type as messageType,
-                        file_name as fileName, file_size as fileSize, file_url as fileUrl,
-                        datetime(created_at, 'utc') as createdAt
-                 FROM messages WHERE id = ?`,
+                `SELECT id, user_id as "userId", content, message_type as "messageType",
+                        file_name as "fileName", file_size as "fileSize", file_url as "fileUrl",
+                        created_at as "createdAt"
+                 FROM messages WHERE id = $1`,
                 [result.lastID]
             );
 
@@ -94,11 +94,11 @@ export class MessageController {
         try {
             // 获取新消息
             const messages = await db.all(
-                `SELECT id, user_id as userId, content, message_type as messageType,
-                        file_name as fileName, file_size as fileSize, file_url as fileUrl,
-                        datetime(created_at, 'utc') as createdAt
+                `SELECT id, user_id as "userId", content, message_type as "messageType",
+                        file_name as "fileName", file_size as "fileSize", file_url as "fileUrl",
+                        created_at as "createdAt"
                  FROM messages
-                 WHERE room_id = ? AND id > ?
+                 WHERE room_id = $1 AND id > $2
                  ORDER BY id ASC
                  LIMIT 50`,
                 [roomId, lastMessageId]
@@ -137,13 +137,13 @@ export class MessageController {
         try {
             // 获取最新消息
             const messages = await db.all(
-                `SELECT id, user_id as userId, content, message_type as messageType,
-                        file_name as fileName, file_size as fileSize, file_url as fileUrl,
-                        datetime(created_at, 'utc') as createdAt
+                `SELECT id, user_id as "userId", content, message_type as "messageType",
+                        file_name as "fileName", file_size as "fileSize", file_url as "fileUrl",
+                        created_at as "createdAt"
                  FROM messages
-                 WHERE room_id = ?
+                 WHERE room_id = $1
                  ORDER BY id DESC
-                 LIMIT ?`,
+                 LIMIT $2`,
                 [roomId, limit]
             );
 

@@ -38,7 +38,7 @@ export class RoomController {
         try {
             // 检查房间是否已存在
             const existing = await db.get(
-                'SELECT id FROM rooms WHERE room_code = ?',
+                'SELECT id FROM rooms WHERE room_code = $1',
                 [roomCode]
             );
 
@@ -49,9 +49,9 @@ export class RoomController {
                 });
             }
 
-            // 创建房间
+            // 创建房间并返回ID
             const result = await db.run(
-                'INSERT INTO rooms (room_code, created_by) VALUES (?, ?)',
+                'INSERT INTO rooms (room_code, created_by) VALUES ($1, $2) RETURNING id',
                 [roomCode, userId]
             );
 
@@ -79,7 +79,7 @@ export class RoomController {
 
         try {
             const room = await db.get(
-                'SELECT id, room_name FROM rooms WHERE room_code = ?',
+                'SELECT id, room_name FROM rooms WHERE room_code = $1',
                 [roomCode]
             );
 
