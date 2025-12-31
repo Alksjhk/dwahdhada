@@ -91,7 +91,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
             const formData = new FormData();
             formData.append('file', file);
 
-            const response = await fetch(`${API_CONFIG.baseURL}/api/files/upload`, {
+            const uploadURL = API_CONFIG.baseURL ? `${API_CONFIG.baseURL}/api/files/upload` : '/api/files/upload';
+            const response = await fetch(uploadURL, {
                 method: 'POST',
                 body: formData,
             });

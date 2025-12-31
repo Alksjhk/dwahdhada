@@ -1,6 +1,8 @@
 // API 配置
+const rawBaseURL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_DEFAULT_API_URL;
+// 如果baseURL为空或只包含空格，使用相对路径（当前域名）
 export const API_CONFIG = {
-  baseURL: import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_DEFAULT_API_URL || 'http://localhost:3001',
+  baseURL: rawBaseURL?.trim() ? rawBaseURL.trim() : '',
   timeout: parseInt(import.meta.env.VITE_API_TIMEOUT) || 10000,
   env: import.meta.env.VITE_NODE_ENV || 'development'
 }

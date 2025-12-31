@@ -6,7 +6,7 @@
 轻量级网页聊天系统（Web Chat System）
 
 ### 1.2 项目目标
-开发一个无需注册登录的轻量级网页聊天系统，支持公共聊天室和私密房间功能，使用 **Server-Sent Events (SSE)** 实现实时消息推送。
+开发一个无需注册登录的轻量级网页聊天系统，支持公共聊天室和私密房间功能，使用 **Server-Sent Events (SSE)** 实现实时消息推送，支持**合并部署**模式。
 
 ### 1.3 技术特点
 - 无用户注册流程，使用自定义ID快速接入
@@ -20,6 +20,7 @@
 - 支持文件上传（图片、文档等，最大10MB）
 - 数据库自动迁移机制
 - CSS Modules 组件化样式
+- **合并部署**：单端口服务前后端
 
 ### 1.4 项目状态
 ✅ **已完成并投入使用**
@@ -30,6 +31,15 @@
 - 前后端API对接完成
 - 响应式UI适配完成
 - 状态管理优化完成
+- **合并部署**功能完成
+
+### 1.5 版本演进
+- **v1.0**: 基础功能完成，前后端分离部署
+- **v1.1**: 合并部署优化，组件精简
+  - 移除 NicknameForm 组件
+  - 移除 Avatar 组件
+  - 支持相对路径API调用
+  - Express提供静态文件服务
 
 ---
 
@@ -470,15 +480,20 @@ GET /api/sse/1?userId=user123
 ```
 App (ChatContext.Provider)
 ├── LoginForm (登录表单)
-├── NicknameForm (昵称设置)
 └── ChatContainer (聊天主容器)
-    ├── ChatHeader (头部 + 登出)
+    ├── ChatHeader (头部 + 登出，移除Avatar)
     ├── RoomSelector (房间切换)
     ├── MessageList (消息列表)
-    │   └── MessageBubble (单条消息)
-    ├── MessageInput (输入 + 文件上传)
+    │   └── MessageBubble (单条消息，移除Avatar)
+    ├── MessageInput (输入 + 文件上传，支持相对路径)
     └── ConnectionStatus (SSE状态指示器)
 ```
+
+**组件变更说明**:
+- ✅ **移除**: `NicknameForm` - 简化登录流程，直接使用用户ID
+- ✅ **移除**: `Avatar` - UI简化，减少视觉复杂度
+- ✅ **修改**: `MessageInput` - 支持相对路径文件上传
+- ✅ **修改**: `ChatHeader` - 移除头像显示
 
 ### 5.2 状态管理 (React Context + useReducer)
 
@@ -642,14 +657,46 @@ server/
 │   │   ├── database.ts     # 数据库连接
 │   │   └── SSEManager.ts   # SSE服务端管理器
 │   ├── types.ts            # TypeScript类型定义
-│   └── app.ts              # Express应用入口
+│   └── app.ts              # Express应用入口 (支持合并部署)
 ├── database/               # SQLite数据库文件
 │   └── chat.db
 ├── uploads/                # 文件上传目录
 ├── .env                    # 环境变量
-├── package.json
+├── package.json            # 包配置 (包含merge脚本)
 └── tsconfig.json
 ```
+
+### 6.2 合并部署架构变更
+
+**app.ts 核心修改**:
+```typescript
+// 静态文件服务 - 提供前端构建文件
+const distPath = path.join(__dirname, '../../client/dist');
+app.use(express.static(distPath));
+
+// SPA路由处理 - 在API路由之后，404处理之前
+app.get('*', (req, res) => {
+    // 如果请求的是API路径但不存在，返回404
+    if (req.path.startsWith('/api/')) {
+        res.status(404).json({ success: false, message: '接口不存在' });
+        return;
+    }
+
+    // 其他所有请求都返回index.html
+    const indexPath = path.join(distPath, 'index.html');
+    res.sendFile(indexPath, (err) => {
+        if (err) {
+            res.status(404).json({ success: false, message: '页面不存在' });
+        }
+    });
+});
+```
+
+**优势**:
+- 单端口运行 (3001)
+- 自动提供静态文件
+- SPA路由支持
+- 无需额外Web服务器
 
 ### 6.2 SSEManager (服务端)
 

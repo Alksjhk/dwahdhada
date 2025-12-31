@@ -4,8 +4,11 @@ import { API_CONFIG, getEnvConfig } from '../config/api';
 
 const envConfig = getEnvConfig();
 
+// 构建baseURL：如果API_CONFIG.baseURL为空，则使用相对路径
+const baseURL = API_CONFIG.baseURL ? `${API_CONFIG.baseURL}/api` : '/api';
+
 const api = axios.create({
-    baseURL: API_CONFIG.baseURL + '/api',
+    baseURL: baseURL,
     timeout: API_CONFIG.timeout,
     headers: {
         'Content-Type': 'application/json',

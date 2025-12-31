@@ -73,11 +73,7 @@ ehthumbs.db
 Thumbs.db
 Desktop.ini
 
-# ==================== 环境变量 ====================
-.env
-.env.local
-.env.*.local
-.env.test
+
 # 保留 .env.example 用于模板
 
 # ==================== 临时文件 ====================

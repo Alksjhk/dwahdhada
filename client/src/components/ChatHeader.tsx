@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Avatar } from './ui';
+import { Button } from './ui';
 import styles from './ChatHeader.module.css';
 
 interface ChatHeaderProps {
@@ -15,7 +15,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ username, onLogout, connectionS
                 <div className={styles.logo}>💬</div>
                 <h1 className={styles.title}>轻量级聊天</h1>
             </div>
-            
+
             <div className={styles.right}>
                 {connectionStatus && (
                     <div className={styles.connectionStatus}>
@@ -28,7 +28,6 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ username, onLogout, connectionS
                     </div>
                 )}
                 <div className={styles.userInfo}>
-                    <Avatar name={username} size="sm" />
                     <span className={styles.username}>{username}</span>
                 </div>
                 <Button variant="ghost" size="sm" onClick={onLogout}>

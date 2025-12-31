@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Message } from '../types';
-import { Avatar } from './ui';
 import styles from './MessageBubble.module.css';
 
 interface MessageBubbleProps {
@@ -102,10 +101,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isOwn }) => {
     return (
         <>
             <div className={`${styles.container} ${isOwn ? styles.own : styles.other}`}>
-                {!isOwn && (
-                    <Avatar name={message.userId} size="sm" className={styles.avatar} />
-                )}
-                
                 <div className={styles.bubble}>
                     <div className={styles.header}>
                         <span className={styles.sender}>

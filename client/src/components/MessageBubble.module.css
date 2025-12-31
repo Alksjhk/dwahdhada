@@ -15,11 +15,6 @@
   align-self: flex-start;
 }
 
-.avatar {
-  flex-shrink: 0;
-  margin-top: var(--space-1);
-}
-
 .bubble {
   display: flex;
   flex-direction: column;

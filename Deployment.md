@@ -9,40 +9,26 @@
 
 > **注意**: 本项目使用 Bun 作为包管理器，也支持 npm/yarn
 
-### 一键部署脚本
+### 两种部署模式
 
-#### Windows (PowerShell)
-```powershell
-# 克隆项目
-git clone https://github.com/your-username/web-chat-system.git
-cd web-chat-system
+#### 模式1: 开发环境 (前后端分离)
+- 前端端口: 5173
+- 后端端口: 3001
+- Vite代理API请求到后端
+- 支持热重载
 
-# 安装所有依赖
-bun run install:all
-
-# 启动开发环境
-bun run dev
-```
-
-#### Linux/macOS (Bash)
-```bash
-# 克隆项目
-git clone https://github.com/your-username/web-chat-system.git
-cd web-chat-system
-
-# 安装所有依赖
-bun run install:all
-
-# 启动开发环境
-bun run dev
-```
+#### 模式2: 生产环境 (合并部署 - 推荐)
+- 单端口: 3001
+- Express提供前后端服务
+- 相对路径API调用
+- 无需额外配置
 
 ## 📦 详细部署步骤
 
 ### 1. 获取项目代码
 ```bash
 git clone https://github.com/your-username/web-chat-system.git
-cd web-chat-system
+cd dwahdhada
 ```
 
 ### 2. 安装依赖
@@ -51,106 +37,110 @@ cd web-chat-system
 bun run install:all
 
 # 或分别安装
-# 根目录依赖
-bun install
-
-# 后端依赖
-cd server
-bun install
-
-# 前端依赖
-cd ../client
-bun install
-
-# 返回根目录
+bun install          # 根目录
+cd server && bun install
+cd ../client && bun install
 cd ..
 ```
 
 ### 3. 环境配置
 
-#### 后端环境变量 (server/.env)
+#### 前端环境变量 (client/.env)
 ```env
-# 服务器端口
-PORT=3001
+# 开发环境
+VITE_API_BASE_URL=http://localhost:3001
+VITE_NODE_ENV=development
 
-# 数据库路径
-DATABASE_PATH=./database/chat.db
-
-# 运行环境
-NODE_ENV=development
-
-# 文件上传目录
-UPLOAD_DIR=./uploads
-
-# 文件大小限制 (字节)
-MAX_FILE_SIZE=10485760
+# 生产环境 (合并部署)
+VITE_API_BASE_URL=
+VITE_DEFAULT_API_URL=
+VITE_API_TIMEOUT=15000
+VITE_NODE_ENV=production
+VITE_ENABLE_LOGGING=false
+VITE_ENABLE_DEBUG=false
 ```
 
-#### 前端配置 (client/vite.config.ts)
-```typescript
-export default defineConfig({
-  plugins: [react()],
-  server: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3001',
-        changeOrigin: true
-      }
-    }
-  }
-})
+#### 后端环境变量 (server/.env)
+```env
+# 开发环境
+PORT=3001
+DATABASE_PATH=./database/chat.db
+NODE_ENV=development
+UPLOAD_DIR=./uploads
+MAX_FILE_SIZE=10485760
+
+# 生产环境
+PORT=3001
+DATABASE_PATH=./database/chat.db
+NODE_ENV=production
+UPLOAD_DIR=./uploads
+MAX_FILE_SIZE=10485760
+CORS_ORIGIN=https://yourdomain.com
 ```
 
 ### 4. 启动服务
 
-#### 开发环境
+#### 开发环境 (前后端分离)
 ```bash
-# 同时启动前后端 (推荐)
+# 同时启动前后端
 bun run dev
 
 # 或分别启动
-bun run server:dev  # 后端 (端口 3001)
-bun run client:dev  # 前端 (端口 5173)
+bun run server:dev  # 后端: http://localhost:3001
+bun run client:dev  # 前端: http://localhost:5173
 ```
 
-#### 生产环境
+#### 生产环境 (合并部署 - 推荐)
 ```bash
-# 构建前端
-bun run build
+# 方式1: 使用启动脚本 (最简单)
+bun start.js
 
-# 启动后端
-bun start
+# 方式2: 手动构建并启动
+cd client && bun run build
+cd ../server && bun run merge
+
+# 方式3: 使用npm脚本
+cd server && bun run merge
 ```
+
+**访问地址**: `http://localhost:3001`
 
 ## 🌐 生产环境部署
 
 ### 1. 构建优化
 ```bash
-# 构建前端静态文件
-cd client
-bun run build
+# 方式1: 使用启动脚本自动构建
+bun start.js
 
-# 构建后端 (如果使用 TypeScript)
-cd ../server
-bun run build
+# 方式2: 手动构建
+cd client && bun run build
+cd ../server && bun run merge
 ```
 
-### 2. 服务器配置
+### 2. 使用 PM2 (推荐)
 
-#### 使用 PM2 (推荐)
 ```bash
-# 安装 PM2
+# 1. 构建前端
+cd client && bun run build
+
+# 2. 安装 PM2
 npm install -g pm2
 
-# 启动应用
-pm2 start server/dist/app.js --name "chat-server"
+# 3. 启动应用
+cd ../server
+pm2 start src/app.js --name "chat-server"
 
-# 设置开机自启
+# 4. 设置开机自启
 pm2 startup
 pm2 save
+
+# 5. 查看状态
+pm2 status
+pm2 logs chat-server
 ```
 
-#### 使用 Docker
+### 3. 使用 Docker
+
 ```dockerfile
 # Dockerfile
 FROM node:18-alpine
@@ -160,28 +150,61 @@ WORKDIR /app
 # 复制项目文件
 COPY . .
 
-# 安装依赖
+# 安装依赖并构建
 RUN bun install
-
-# 构建前端
-RUN bun run build
+RUN cd client && bun run build
 
 # 暴露端口
 EXPOSE 3001
 
 # 启动命令
-CMD ["bun", "start"]
+CMD ["bun", "server/src/app.ts"]
 ```
 
 ```bash
 # 构建镜像
-docker build -t web-chat-system .
+docker build -t chat-system .
 
-# 运行容器
-docker run -p 3001:3001 -v $(pwd)/server/database:/app/server/database web-chat-system
+# 运行容器 (挂载数据卷)
+docker run -d \
+  -p 3001:3001 \
+  -v $(pwd)/server/database:/app/server/database \
+  -v $(pwd)/server/uploads:/app/server/uploads \
+  --name chat-app \
+  chat-system
 ```
 
-### 3. Nginx 反向代理
+### 4. Nginx 反向代理 (可选)
+
+**注意**: 合并部署后通常不需要Nginx，但如果需要SSL或负载均衡：
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    # 合并部署模式 - 直接代理到后端
+    location / {
+        proxy_pass http://localhost:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # SSE关键配置 - 禁用缓冲
+        proxy_buffering off;
+        proxy_set_header Connection '';
+        proxy_set_header Cache-Control no-cache;
+        proxy_set_header X-Accel-Buffering no;
+    }
+
+    # 文件上传大小限制
+    client_max_body_size 10M;
+}
+```
+
+**如果使用分离部署模式**:
 ```nginx
 server {
     listen 80;
@@ -193,16 +216,14 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
-    # API 代理 (包含SSE支持)
+    # API代理
     location /api/ {
         proxy_pass http://localhost:3001;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
 
-        # SSE关键配置 - 禁用缓冲
+        # SSE配置
         proxy_buffering off;
         proxy_set_header Connection '';
         proxy_set_header Cache-Control no-cache;
@@ -224,16 +245,23 @@ server {
 |----------|--------|------|
 | PORT | 3001 | 服务器端口 |
 | DATABASE_PATH | ./database/chat.db | 数据库文件路径 |
-| NODE_ENV | development | 运行环境 |
+| NODE_ENV | development | 运行环境 (development/production) |
 | UPLOAD_DIR | ./uploads | 文件上传目录 |
 | MAX_FILE_SIZE | 10485760 | 最大文件大小(10MB) |
+| CORS_ORIGIN | - | 生产环境CORS域名(可选) |
 
 ### 前端配置
-| 配置项 | 默认值 | 说明 |
-|--------|--------|------|
-| VITE_API_BASE_URL | /api | API基础路径 |
-| VITE_API_TIMEOUT | 10000 | 请求超时时间(毫秒) |
-| VITE_NODE_ENV | development | 运行环境 |
+| 配置项 | 开发环境 | 生产环境 | 说明 |
+|--------|----------|----------|------|
+| VITE_API_BASE_URL | http://localhost:3001 | (空值) | API基础URL |
+| VITE_API_TIMEOUT | 10000 | 15000 | 请求超时时间(毫秒) |
+| VITE_NODE_ENV | development | production | 运行环境 |
+| VITE_ENABLE_LOGGING | true | false | 是否启用日志 |
+| VITE_ENABLE_DEBUG | true | false | 是否启用调试 |
+
+**重要说明**:
+- 生产环境 `VITE_API_BASE_URL=` 空值表示使用相对路径 `/api`
+- 合并部署后，前端自动使用当前域名的相对路径
 
 ## 🛠️ 故障排除
 
@@ -250,51 +278,72 @@ taskkill /PID <PID> /F        # Windows
 kill -9 <PID>                 # Linux/macOS
 ```
 
-#### 2. 数据库权限问题
+#### 2. 前端构建文件不存在
+**症状**: 合并部署后访问页面404
+
+**解决方案**:
+```bash
+# 必须先构建前端
+cd client && bun run build
+
+# 检查dist目录是否存在
+ls client/dist/index.html
+```
+
+#### 3. 数据库权限问题
 ```bash
 # 确保数据库目录有写权限
 chmod 755 server/database
 chmod 644 server/database/chat.db
 ```
 
-#### 3. 文件上传失败
+#### 4. 文件上传失败
 ```bash
 # 确保上传目录存在且有写权限
 mkdir -p server/uploads
 chmod 755 server/uploads
 ```
 
-#### 4. 依赖安装失败
+#### 5. 依赖安装失败
 ```bash
 # 清理缓存重新安装
-bun clean
-rm -rf node_modules bun.lockb
-bun install
+cd client && rm -rf node_modules bun.lockb && bun install
+cd ../server && rm -rf node_modules bun.lockb && bun install
 ```
 
-#### 5. SSE连接失败
+#### 6. 合并部署后API请求失败
+**症状**: 前端无法访问API，显示网络错误
+
+**原因**: 环境变量配置错误
+
+**解决方案**:
+- 检查 `client/.env` 中 `VITE_API_BASE_URL=` 为空
+- 确保前端使用相对路径 `/api`
+- 验证后端 `server/src/app.ts` 正确配置静态文件服务
+
+#### 7. SSE连接失败
 **症状**: 消息无法实时推送，连接状态显示错误
 
 **解决方案**:
-- 检查Nginx配置是否包含SSE禁用缓冲设置
-- 验证防火墙是否阻止SSE连接
-- 检查浏览器控制台是否有CORS错误
+- 检查 `server/src/app.ts` 中CORS配置
+- 确保生产环境设置 `NODE_ENV=production`
 - 测试SSE端点: `curl -N "http://localhost:3001/api/sse/0?userId=test"`
+- 检查防火墙设置
 
-#### 6. 消息延迟或丢失
-**症状**: 消息发送后接收延迟或完全未收到
+#### 8. 页面加载但无法交互
+**症状**: 页面显示但无法登录或发送消息
+
+**原因**: API路径配置错误
 
 **解决方案**:
-- 检查SSEManager连接状态
-- 验证数据库插入是否成功
-- 查看后端日志中的SSE广播记录
-- 确认客户端是否正确订阅房间
+- 浏览器开发者工具查看网络请求
+- 确认API请求URL是否正确
+- 检查后端日志确认请求是否到达
 
 ### 日志查看
 ```bash
-# 后端日志
-cd server
-bun run dev  # 开发环境日志
+# 开发环境日志
+cd server && bun run dev
 
 # PM2 日志
 pm2 logs chat-server
@@ -304,6 +353,9 @@ docker logs <container-id>
 
 # 实时监控SSE连接
 curl http://localhost:3001/api/sse/stats
+
+# 查看前端构建状态
+ls -la client/dist/
 ```
 
 ## 📊 性能优化
@@ -384,33 +436,48 @@ tar -czf backup/uploads_$(date +%Y%m%d).tar.gz server/uploads/
 
 ### 部署前检查
 - [ ] Node.js 版本 >= 18.0.0
-- [ ] 所有依赖安装完成
+- [ ] Bun 版本 >= 1.0+
+- [ ] 所有依赖安装完成 (`bun run install:all`)
 - [ ] 环境变量配置正确
 - [ ] 数据库目录权限正确
 - [ ] 文件上传目录权限正确
 
-### 部署后验证
-- [ ] 服务器启动成功
-- [ ] 数据库连接正常
-- [ ] API接口响应正常
+### 开发环境验证
+- [ ] `bun run dev` 启动成功
+- [ ] 前端访问 http://localhost:5173 正常
+- [ ] 后端API http://localhost:3001 正常
+- [ ] Vite代理正常工作
+
+### 生产环境 (合并部署) 验证
+- [ ] 前端已构建 (`client/dist` 存在)
+- [ ] `bun start.js` 或 `bun run merge` 启动成功
+- [ ] 单端口访问 http://localhost:3001 正常
 - [ ] 前端页面加载正常
+- [ ] API接口 `/api/*` 响应正常
 - [ ] SSE连接正常（查看连接状态指示器）
 - [ ] 文件上传功能正常
 - [ ] 消息收发功能正常（实时推送）
 - [ ] 房间切换功能正常
 
-### 生产环境检查
-- [ ] HTTPS配置
-- [ ] 反向代理配置（包含SSE支持）
-- [ ] 防火墙配置（允许SSE连接）
-- [ ] 监控系统配置（包括SSE连接监控）
-- [ ] 备份策略配置
+### 生产环境部署检查
+- [ ] 使用 PM2 或 Docker 部署
+- [ ] 环境变量 `NODE_ENV=production`
+- [ ] CORS配置正确（如需要）
+- [ ] 防火墙配置（允许3001端口）
+- [ ] 数据库备份策略
+- [ ] 文件上传目录备份
 - [ ] 日志管理配置
+
+### 合并部署特有检查
+- [ ] `client/.env` 中 `VITE_API_BASE_URL=` 为空
+- [ ] `server/src/app.ts` 静态文件服务配置正确
+- [ ] `server/src/app.ts` SPA路由配置正确
+- [ ] 前端构建文件完整 (`dist/index.html` 存在)
 
 ---
 
-**部署指南版本**: v1.0  
-**适用系统版本**: v1.0.0  
-**最后更新**: 2024年12月27日  
+**部署指南版本**: v1.1 (合并部署版)
+**适用系统版本**: v1.1.0+
+**最后更新**: 2025-12-31
 
 如有部署问题，请参考项目文档或提交Issue。

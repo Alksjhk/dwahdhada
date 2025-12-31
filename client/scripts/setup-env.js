@@ -34,8 +34,8 @@ const environments = {
     VITE_ENABLE_DEBUG: 'false'
   },
   production: {
-    VITE_API_BASE_URL: process.env.PROD_API_URL || 'https://api.example.com',
-    VITE_DEFAULT_API_URL: 'https://api.example.com',
+    VITE_API_BASE_URL: process.env.PROD_API_URL || 'https://api.yourdomain.com',
+    VITE_DEFAULT_API_URL: 'https://api.yourdomain.com',
     VITE_API_TIMEOUT: process.env.API_TIMEOUT || '15000',
     VITE_NODE_ENV: 'production',
     VITE_ENABLE_LOGGING: 'false',

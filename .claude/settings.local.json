@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node verify-production-config.js:*)",
+      "Bash(cat:*)",
+      "Bash(bun run build:*)",
+      "Bash(bun run start:*)",
+      "Bash(curl:*)",
+      "Bash(del \"c:\\\\Users\\\\Administrator\\\\Desktop\\\\dwahdhada\\\\client\\\\src\\\\components\\\\NicknameForm.tsx\":*)",
+      "Bash(del \"c:\\\\Users\\\\Administrator\\\\Desktop\\\\dwahdhada\\\\client\\\\src\\\\components\\\\NicknameForm.module.css\")",
+      "Bash(rm:*)",
+      "Bash(findstr:*)",
+      "Bash(dir:*)"
+    ]
+  }
+}

@@ -2,7 +2,7 @@
 
 基于 React + Node.js + SQLite 的轻量级实时聊天系统，支持公共大厅和私密房间功能，使用 Server-Sent Events (SSE) 实现实时消息推送。
 
-## 功能特性
+## 🎯 项目特性
 
 - **无需注册登录** - 输入自定义ID即可开始聊天
 - **公共大厅** - 默认进入的公共聊天室
@@ -11,8 +11,9 @@
 - **文件上传** - 支持图片、文档等（最大10MB）
 - **响应式设计** - 支持桌面端和移动端
 - **消息持久化** - SQLite数据库存储
+- **合并部署** - 前后端一体化部署，单端口运行
 
-## 技术栈
+## 🛠️ 技术栈
 
 | 层级 | 技术 |
 |------|------|
@@ -27,14 +28,15 @@
 - ✅ 文件上传支持 (multer, 最大10MB)
 - ✅ TypeScript 全栈类型安全
 - ✅ CSS Modules 组件化样式
+- ✅ 合并部署 (单端口服务前后端)
 
-## 快速开始
+## 🚀 快速开始
 
 ### 环境要求
 - Node.js 18+
 - Bun 1.0+
 
-### 安装启动
+### 开发环境启动
 
 ```bash
 # 克隆项目
@@ -44,44 +46,57 @@ cd web-chat-system
 # 安装依赖
 bun run install:all
 
-# 启动开发环境
+# 启动开发环境 (前后端分离)
 bun run dev
 ```
 
-访问 `http://localhost:5173`
+- 前端: `http://localhost:5173`
+- 后端: `http://localhost:3001`
+
+### 生产环境启动 (合并部署)
+
+```bash
+# 1. 构建前端
+cd client && bun run build
+
+# 2. 启动合并服务器
+cd ../server && bun run merge
+# 或使用启动脚本
+cd .. && bun start.js
+```
+
+- 访问: `http://localhost:3001`
 
 ## 项目结构
 
 ```
-web-chat-system/
+dwahdhada/
 ├── client/                     # 前端项目 (React + TypeScript + Vite)
 │   ├── src/
 │   │   ├── components/         # React组件
 │   │   │   ├── ChatContainer.tsx    # 聊天主容器
-│   │   │   ├── ChatHeader.tsx       # 头部组件
+│   │   │   ├── ChatHeader.tsx       # 头部组件 (已移除Avatar)
 │   │   │   ├── MessageList.tsx      # 消息列表
-│   │   │   ├── MessageInput.tsx     # 消息输入
+│   │   │   ├── MessageInput.tsx     # 消息输入 (支持相对路径上传)
 │   │   │   ├── RoomSelector.tsx     # 房间选择器
 │   │   │   ├── LoginForm.tsx        # 登录表单
-│   │   │   ├── NicknameForm.tsx     # 昵称设置
 │   │   │   ├── ConnectionStatus.tsx # 连接状态
-│   │   │   └── ui/                  # UI组件库
+│   │   │   └── ui/                  # UI组件库 (Button, Input)
 │   │   ├── context/            # React Context状态管理
 │   │   │   └── ChatContext.tsx
-│   │   ├── hooks/              # 自定义Hooks
-│   │   │   └── useResponsive.ts
 │   │   ├── utils/              # 工具函数
 │   │   │   ├── SSEManager.ts   # SSE客户端管理器
-│   │   │   ├── api.ts          # Axios API客户端
-│   │   │   └── MessagePoller.ts # 轮询机制(备用)
+│   │   │   ├── api.ts          # Axios API客户端 (支持相对路径)
 │   │   ├── config/             # 配置文件
-│   │   │   └── api.ts
+│   │   │   └── api.ts          # API配置 (处理空baseURL)
 │   │   ├── component/          # 特效组件
 │   │   │   └── Aurora.tsx      # 极光背景特效
 │   │   ├── types.ts            # TypeScript类型定义
-│   │   ├── App.tsx             # 应用入口
+│   │   ├── App.tsx             # 应用入口 (移除NicknameForm)
 │   │   └── main.tsx            # Vite入口
-│   ├── .env                   # 环境变量
+│   ├── scripts/
+│   │   └── setup-env.js        # 环境配置脚本
+│   ├── .env                   # 环境变量 (生产环境配置)
 │   ├── package.json
 │   ├── vite.config.ts
 │   └── tsconfig.json
@@ -104,19 +119,20 @@ web-chat-system/
 │   │   │   ├── database.ts     # 数据库连接
 │   │   │   └── SSEManager.ts   # SSE服务端管理器
 │   │   ├── types.ts            # TypeScript类型定义
-│   │   └── app.ts              # Express应用入口
+│   │   └── app.ts              # Express应用入口 (支持合并部署)
 │   ├── database/               # SQLite数据库文件
 │   │   └── chat.db
 │   ├── uploads/                # 文件上传目录
 │   ├── .env                    # 环境变量
 │   ├── package.json
 │   └── tsconfig.json
+├── start.js                    # 合并部署启动脚本
 ├── package.json                # 根目录包配置
+├── MERGE_DEPLOY.md             # 合并部署说明
 ├── README.md
 ├── Technical.md                # 技术文档
 ├── Structure.md                # 结构说明
-├── Deployment.md               # 部署指南
-└── API_CONFIG_GUIDE.md         # API配置指南
+└── Deployment.md               # 部署指南
 ```
 
 ## 系统架构
@@ -317,92 +333,120 @@ interface AppState {
 
 ## 环境配置
 
-### 后端 (server/.env)
+### 前端配置 (client/.env)
+```env
+# 生产环境配置 - 合并部署使用相对路径
+VITE_API_BASE_URL=
+VITE_DEFAULT_API_URL=
+VITE_API_TIMEOUT=15000
+VITE_NODE_ENV=production
+VITE_ENABLE_LOGGING=false
+VITE_ENABLE_DEBUG=false
+```
+
+### 后端配置 (server/.env)
 ```env
 PORT=3001
 DATABASE_PATH=./database/chat.db
-NODE_ENV=development
+NODE_ENV=production
 UPLOAD_DIR=./uploads
 MAX_FILE_SIZE=10485760
+# CORS配置 (生产环境)
+CORS_ORIGIN=https://yourdomain.com
 ```
 
-### 前端 (client/.env)
-```env
-VITE_API_BASE_URL=/api
-```
+## 📦 部署方式
 
-## 部署
-
-### 开发环境
+### 开发环境 (前后端分离)
 ```bash
-bun run dev              # 同时启动前后端
-bun run server:dev       # 仅后端 (端口3001)
-bun run client:dev       # 仅前端 (端口5173)
+# 启动开发服务器
+bun run dev
+
+# 访问地址
+# 前端: http://localhost:5173
+# 后端: http://localhost:3001
 ```
 
-### 生产环境
+### 生产环境 (合并部署 - 推荐)
 ```bash
-# 构建
+# 方式1: 使用启动脚本 (推荐)
+bun start.js
+
+# 方式2: 手动构建并启动
 cd client && bun run build
-cd ../server && bun run build
+cd ../server && bun run merge
 
-# 启动
-bun start
+# 方式3: 使用npm脚本
+cd server && bun run merge
 ```
+
+**访问地址**: `http://localhost:3001`
 
 ### PM2部署
 ```bash
-pm2 start server/dist/app.js --name "chat-server"
+# 构建前端
+cd client && bun run build
+
+# 使用PM2启动后端
+cd ../server
+pm2 start src/app.js --name "chat-server"
 pm2 startup && pm2 save
 ```
 
-### Nginx配置
+### Nginx反向代理 (可选)
 ```nginx
 server {
     listen 80;
     server_name your-domain.com;
 
+    # 前端静态文件 (如果分离部署)
     location / {
         root /path/to/client/dist;
         try_files $uri $uri/ /index.html;
     }
 
-    location /api {
+    # API代理 (SSE支持)
+    location /api/ {
         proxy_pass http://localhost:3001;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        
-        # SSE特殊配置
+
+        # SSE关键配置
+        proxy_buffering off;
         proxy_set_header Connection '';
         proxy_set_header Cache-Control no-cache;
         proxy_set_header X-Accel-Buffering no;
-        proxy_buffering off;
     }
 
-    location /uploads {
+    # 文件上传
+    location /uploads/ {
         proxy_pass http://localhost:3001;
         client_max_body_size 10M;
     }
 }
 ```
 
-### SSE部署注意事项
+## 🔧 核心变更说明
 
-1. **反向代理配置**
-   - 必须禁用缓冲：`proxy_buffering off`
-   - 设置连接头为空：`proxy_set_header Connection ''`
-   - 禁用缓存：`proxy_set_header Cache-Control no-cache`
+### 1. 合并部署架构
+- **单端口**: 前后端统一在3001端口运行
+- **相对路径**: API请求使用 `/api` 相对路径
+- **静态服务**: Express直接提供前端构建文件
 
-2. **负载均衡**
-   - SSE连接需要会话保持
-   - 使用IP哈希或一致性哈希算法
-   - 避免跨服务器连接问题
+### 2. 组件精简
+- **移除**: `NicknameForm` 组件 (简化登录流程)
+- **移除**: `Avatar` 组件 (UI简化)
+- **保留**: 核心聊天功能组件
 
-3. **监控指标**
-   - 连接数量监控
-   - 消息延迟监控
-   - 重连频率监控
+### 3. 配置优化
+- **前端**: `VITE_API_BASE_URL=` 空值表示相对路径
+- **后端**: 自动处理空baseURL，使用相对路径
+- **文件上传**: 支持相对路径上传接口
+
+### 4. 环境变量
+- **开发环境**: `VITE_API_BASE_URL=http://localhost:3001`
+- **生产环境**: `VITE_API_BASE_URL=` (空值，相对路径)
 
 ## 常见问题
 
@@ -417,28 +461,38 @@ lsof -i :3001
 kill -9 <PID>
 ```
 
-### 依赖安装失败
+### 前端构建失败
 ```bash
+cd client
 rm -rf node_modules bun.lockb
 bun install
+bun run build
 ```
 
 ### 文件上传失败
 ```bash
+# 确保上传目录存在
 mkdir -p server/uploads
 chmod 755 server/uploads
 ```
 
+### SSE连接失败
+- 检查 `server/src/app.ts` 中的CORS配置
+- 确保生产环境设置 `NODE_ENV=production`
+- 验证防火墙设置
+
 ## 使用说明
 
-1. **登录** - 输入自定义用户ID
+1. **登录** - 输入自定义用户ID即可开始
 2. **公共大厅** - 默认进入，所有用户可见
-3. **私密房间** - 输入6位数字创建/加入
+3. **私密房间** - 输入6位数字创建或加入
 4. **发送消息** - 输入框输入，Enter发送
 5. **上传文件** - 点击📎按钮，支持图片和文档
+6. **实时推送** - SSE自动推送新消息
 
 ---
 
-**版本**: v1.0.0  
-**状态**: ✅ 已完成  
+**版本**: v1.1.0 (合并部署版)
+**状态**: ✅ 已完成
 **包管理器**: Bun 1.0+
+**部署模式**: 前后端合并部署
